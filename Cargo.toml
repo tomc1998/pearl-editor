@@ -1,0 +1,9 @@
+[package]
+name = "pearl-editor"
+version = "0.1.0"
+authors = ["Thomas Cheng <thomascheng1998@googlemail.com>"]
+
+[dependencies]
+glium = "0.20.0"
+rusttype = "0.3"
+cgmath = "0.15.0"
