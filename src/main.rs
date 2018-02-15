@@ -1,40 +1,50 @@
-extern crate rusttype;
+extern crate quick_gfx as qgfx;
 extern crate cgmath;
-#[macro_use]
-extern crate glium;
 
-mod renderer;
 mod common;
 
-fn main() {
-    // Setup glium stuff
-    let mut events_loop = glium::glutin::EventsLoop::new();
-    let window = glium::glutin::WindowBuilder::new();
-    let context = glium::glutin::ContextBuilder::new();
-    let display = glium::Display::new(window, context, &events_loop).unwrap();
+use std::collections::HashSet;
 
-    // Create renderer & painter
-    let mut renderer = renderer::Renderer::new(&display);
+fn main() {
+    let mut g = qgfx::QGFX::new();
+
+    // Load font
+    let mut charsets = HashSet::new();
+    charsets.insert(qgfx::Charset::Lowercase);
+    charsets.insert(qgfx::Charset::Uppercase);
+    charsets.insert(qgfx::Charset::Numbers);
+    charsets.insert(qgfx::Charset::Punctuation);
+    let fh = g.cache_glyphs(
+        "assets/FreeMonoBold.ttf",
+        16.0,
+        &qgfx::gen_charset(&charsets)[..],
+    ).unwrap();
 
     let mut closed = false;
 
     while !closed {
-        use glium::{glutin, Surface};
-
         {
-            let mut painter = renderer.get_painter();
-            painter.fill_rect(&common::Rect::new(0.0, 0.0, 0.1, 0.1), &[255, 0, 0, 255]);
+            let controller = g.get_renderer_controller();
+            controller
+                .text(
+                    "The quick brown fox jumps over the lazy dog!",
+                    &[128.0, 128.0],
+                    fh,
+                    &[1.0, 1.0, 1.0, 1.0],
+                )
+                .unwrap();
         }
 
-        let mut surface = display.draw();
-        surface.clear_color(0.1, 0.1, 0.2, 1.0);
-        renderer.render(&mut surface);
-        surface.finish().unwrap();
+        g.recv_data();
+        g.render();
 
-        events_loop.poll_events(|event| match event {
-            glutin::Event::WindowEvent { event, .. } => {
-                match event {
-                    glutin::WindowEvent::Closed => closed = true,
+        g.poll_events(|ev| match ev {
+            qgfx::Event::WindowEvent {
+                event: ev,
+                window_id: _,
+            } => {
+                match ev {
+                    qgfx::WindowEvent::Closed => closed = true,
                     _ => (),
                 }
             }
