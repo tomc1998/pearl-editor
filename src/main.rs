@@ -2,8 +2,11 @@ extern crate quick_gfx as qgfx;
 extern crate cgmath;
 
 mod common;
+mod view;
+mod java_model;
 
 use std::collections::HashSet;
+use java_model::*;
 
 fn main() {
     let mut g = qgfx::QGFX::new();
@@ -21,18 +24,19 @@ fn main() {
     ).unwrap();
 
     let mut closed = false;
+    let class_view = view::ClassListView::new(fh);
+
+    let mut classes = Vec::new();
+    for ii in 0..3 {
+        let mut class = Class::new_empty();
+        class.name = format!("Class {}", ii);
+        classes.push(class);
+    }
 
     while !closed {
         {
             let controller = g.get_renderer_controller();
-            controller
-                .text(
-                    "The quick brown fox jumps over the lazy dog!",
-                    &[128.0, 128.0],
-                    fh,
-                    &[1.0, 1.0, 1.0, 1.0],
-                )
-                .unwrap();
+            class_view.render(&controller, &classes[..]);
         }
 
         g.recv_data();

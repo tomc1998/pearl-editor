@@ -1,3 +1,5 @@
+#![allow(dead_code)]
+
 use cgmath::Vector2;
 
 pub struct Rect {
