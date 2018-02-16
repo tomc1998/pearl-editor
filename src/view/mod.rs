@@ -33,11 +33,12 @@ impl PackageListView {
         decl_list: &[Declaration],
         offset: cgmath::Vector2<f32>,
         decl_height: f32,
+        decl_width: f32,
     ) -> Rect {
         let mut pos = offset;
         for d in decl_list {
             g.rect(
-                &[pos.x, pos.y, self.width, decl_height],
+                &[pos.x, pos.y, decl_width, decl_height],
                 &[0.1, 0.1, 0.1, 1.0],
             );
             g.text(
@@ -51,7 +52,7 @@ impl PackageListView {
         return Rect::new(
             offset.x,
             offset.y,
-            self.width,
+            decl_width,
             decl_height * decl_list.len() as f32,
         );
 
@@ -67,7 +68,21 @@ impl PackageListView {
     ) {
         let mut pos = offset;
         for p in packages {
-            let rect = self.render_decl_list(g, &p.decl_list[..], pos, 32.0);
+            g.rect(
+                &[pos.x, pos.y, self.width - 16.0, 32.0],
+                &[0.1, 0.1, 0.1, 1.0],
+            );
+            g.text(
+                p.name.as_ref(),
+                &[pos.x, pos.y + 32.0 / 2.0],
+                self.font,
+                &[1.0, 1.0, 1.0, 1.0],
+            ).unwrap();
+            pos.y += 32.0;
+
+            pos.x += 16.0;
+            let rect = self.render_decl_list(g, &p.decl_list[..], pos, 32.0, self.width - 16.0);
+            pos.x -= 16.0;
             pos.y += rect.size.y;
         }
     }
