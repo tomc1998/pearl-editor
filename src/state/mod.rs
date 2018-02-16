@@ -41,16 +41,23 @@ impl State {
     /// * `prompts` - The items to prompt the user for
     /// * `callback` - Called when user completes prompt. Accepts a slice of strings, which are the
     /// user's inputs (corresponding to the given prompts)
-    pub fn prompt(this: Arc<State>, prompts: Vec<String>, mut callback: Box<FnMut(&[String])>) -> bool {
+    pub fn prompt(
+        this: Arc<State>,
+        prompts: Vec<String>,
+        mut callback: Box<FnMut(&[String])>,
+    ) -> bool {
         let mut prompt = this.curr_prompt.lock().unwrap();
         if prompt.is_some() {
             return true;
         } else {
             let this = this.clone();
-            *prompt = Some(prompt::Prompt::new(prompts, Box::new(move |data| {
-                callback(data);
-                *this.curr_prompt.lock().unwrap() = None;
-            })));
+            *prompt = Some(prompt::Prompt::new(
+                prompts,
+                Box::new(move |data| {
+                    callback(data);
+                    *this.curr_prompt.lock().unwrap() = None;
+                }),
+            ));
             true
         }
     }
@@ -70,25 +77,29 @@ impl State {
                         self.command_buffer.lock().unwrap().reset_input();
                         *self.curr_prompt.lock().unwrap() = None;
                     }
+                    let i = input::InputChunk::from_modifiers_state(
+                        k.virtual_keycode.unwrap(),
+                        k.modifiers,
+                    );
                     // If prompt is showing, send data to that first
                     if self.curr_prompt.lock().unwrap().is_some() {
+                        self.curr_prompt.lock().unwrap().as_mut().unwrap().key_input(i);
                     } else {
                         // Otherwise, send data to the command buffer
                         // Special case, clear the command buffer on C-g
-                        (*self.command_buffer.lock().unwrap()).add_key(
-                            input::InputChunk(
-                                k.virtual_keycode
-                                    .unwrap(),
-                                0,
-                            ),
-                        );
+                        (*self.command_buffer.lock().unwrap()).add_key(i);
                     }
                     return true;
                 }
             }
             qgfx::WindowEvent::ReceivedCharacter(c) => {
                 if self.curr_prompt.lock().unwrap().is_some() {
-                    self.curr_prompt.lock().unwrap().as_mut().unwrap().char_input(c);
+                    self.curr_prompt
+                        .lock()
+                        .unwrap()
+                        .as_mut()
+                        .unwrap()
+                        .char_input(c);
                 }
             }
             _ => (),

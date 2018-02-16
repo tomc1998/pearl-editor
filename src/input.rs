@@ -1,4 +1,5 @@
 use winit::VirtualKeyCode as VKC;
+use winit::ModifiersState;
 
 /// Modifiers represented using the 4 least significant bits of the given number.
 /// Order (from most significant to least) is: shift, ctrl, alt, logo (windows
@@ -12,6 +13,13 @@ pub type Modifiers = u8;
 pub struct InputChunk(pub VKC, pub Modifiers);
 
 impl InputChunk {
+    /// Create from winit::ModifiersState
+    pub fn from_modifiers_state(k: VKC, m: ModifiersState) -> InputChunk {
+        let modifier = if m.shift { 8 } else { 0 } + if m.ctrl { 4 } else { 0 } +
+            if m.ctrl { 2 } else { 0 } + if m.ctrl { 1 } else { 0 };
+        InputChunk(k, modifier)
+    }
+
     /// Convert this input chunk to a string
     pub fn to_str(&self) -> &'static str {
         match self.0 {
@@ -45,4 +53,3 @@ impl InputChunk {
         }
     }
 }
-
