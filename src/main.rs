@@ -4,11 +4,16 @@ extern crate cgmath;
 mod common;
 mod view;
 mod java_model;
+mod state;
 
 use std::collections::HashSet;
 use java_model::*;
 
 fn main() {
+    // Initialise state
+    let state = std::sync::Arc::new(state::State::new());
+
+    // Initialise window
     let mut g = qgfx::QGFX::new();
 
     // Load font
@@ -24,19 +29,26 @@ fn main() {
     ).unwrap();
 
     let mut closed = false;
-    let class_view = view::ClassListView::new(fh);
+    let package_view = view::PackageListView::new(state.clone(), fh);
 
-    let mut classes = Vec::new();
-    for ii in 0..3 {
-        let mut class = Class::new_empty();
-        class.name = format!("Class {}", ii);
-        classes.push(class);
+    let mut packages = Vec::new();
+
+    for jj in 0..3 {
+        let mut declarations = Vec::new();
+        for ii in 0..3 {
+            let mut class = Class::new_empty();
+            class.name = format!("MyClass{}", ii);
+            declarations.push(Declaration::Class(class));
+        }
+        let mut p = Package::new(format!("com.tom.package{}", jj));
+        p.decl_list = declarations;
+        packages.push(p);
     }
 
     while !closed {
         {
             let controller = g.get_renderer_controller();
-            class_view.render(&controller, &classes[..]);
+            package_view.render(&controller, cgmath::Vector2::new(0.0, 0.0), &packages[..]);
         }
 
         g.recv_data();

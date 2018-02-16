@@ -2,40 +2,73 @@
 
 use java_model::*;
 use qgfx::{RendererController, FontHandle};
+use common::Rect;
 use cgmath;
+use std;
+use state;
 
-pub struct ClassListView {
-    pub offset: cgmath::Vector2<f32>,
+pub struct PackageListView {
+    pub state: std::sync::Arc<state::State>,
 
     /// The width of this view
     pub width: f32,
 
-    /// The height of the classes when rendered in a list.
-    pub class_height: f32,
-
     pub font: FontHandle,
 }
 
-impl ClassListView {
-    pub fn new(font: FontHandle) -> ClassListView {
-        ClassListView {
-            offset: cgmath::Vector2 { x: 0.0, y: 0.0 },
+impl PackageListView {
+    pub fn new(state: std::sync::Arc<state::State>, font: FontHandle) -> PackageListView {
+        PackageListView {
+            state: state,
             width: 128.0,
-            class_height: 32.0,
             font: font,
         }
     }
 
-    /// Given a renderer controller, render a class list.
-    pub fn render(&self, g: &RendererController, class_list: &[Class]) {
-        let mut pos = self.offset;
-        for c in class_list {
+    /// Helper to render a list of decls. Returns a rect which indicates the size used up by the
+    /// classes rendered.
+    fn render_decl_list(
+        &self,
+        g: &RendererController,
+        decl_list: &[Declaration],
+        offset: cgmath::Vector2<f32>,
+        decl_height: f32,
+    ) -> Rect {
+        let mut pos = offset;
+        for d in decl_list {
             g.rect(
-                &[pos.x, pos.y, self.width, self.class_height],
+                &[pos.x, pos.y, self.width, decl_height],
                 &[0.1, 0.1, 0.1, 1.0],
             );
-            g.text(&c.name, &[pos.x, pos.y + self.class_height/2.0], self.font, &[1.0, 1.0, 1.0, 1.0]).unwrap();
-            pos.y += self.class_height;
+            g.text(
+                d.name(),
+                &[pos.x, pos.y + decl_height / 2.0],
+                self.font,
+                &[1.0, 1.0, 1.0, 1.0],
+            ).unwrap();
+            pos.y += decl_height;
+        }
+        return Rect::new(
+            offset.x,
+            offset.y,
+            self.width,
+            decl_height * decl_list.len() as f32,
+        );
+
+    }
+
+    /// Renders a list of packages.
+    /// Returns the bounding box used up from rendering.
+    pub fn render(
+        &self,
+        g: &RendererController,
+        offset: cgmath::Vector2<f32>,
+        packages: &[Package],
+    ) {
+        let mut pos = offset;
+        for p in packages {
+            let rect = self.render_decl_list(g, &p.decl_list[..], pos, 32.0);
+            pos.y += rect.size.y;
         }
     }
 }
