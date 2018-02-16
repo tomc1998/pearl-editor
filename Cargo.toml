@@ -6,3 +6,5 @@ authors = ["Thomas Cheng <thomascheng1998@googlemail.com>"]
 [dependencies]
 quick-gfx = { git = "https://github.com/tomc1998/rs-quick-gfx" }
 cgmath = "0.15.0"
+winit = "*"
+smallvec = "0.6.0"
