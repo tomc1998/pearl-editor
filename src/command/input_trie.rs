@@ -42,6 +42,7 @@ fn char_to_keycode(c: char) -> Option<VKC> {
     }
 }
 
+#[derive(Clone, Debug)]
 struct TrieNode {
     /// The input for this node.
     input: InputChunk,
@@ -56,6 +57,7 @@ struct TrieNode {
     command: Option<Command>,
 }
 
+#[derive(Clone, Debug)]
 pub struct InputTrie {
     trie_nodes: Vec<TrieNode>,
     roots: SmallVec<[NodeRef; 32]>,
@@ -70,12 +72,37 @@ impl InputTrie {
     }
 
     /// Panics if ref invalid
-    pub fn get_node(&self, r: NodeRef) -> &TrieNode {
+    #[allow(dead_code)]
+    fn get_node(&self, r: NodeRef) -> &TrieNode {
         &self.trie_nodes[r]
     }
     /// Panics if ref invalid
-    pub fn get_node_mut(&mut self, r: NodeRef) -> &mut TrieNode {
+    #[allow(dead_code)]
+    fn get_node_mut(&mut self, r: NodeRef) -> &mut TrieNode {
         &mut self.trie_nodes[r]
+    }
+
+    /// Given a node ref and some input, return the next node ref in the tree after applying the
+    /// input, or none if nothing exists.
+    /// 
+    /// If the input node is none, this method will look through root nodes.
+    pub fn advance_node_ref(&self, r: Option<NodeRef>, input: InputChunk) -> Option<NodeRef> {
+        if r.is_none() {
+            for c in &self.roots {
+                if self.trie_nodes[*c].input == input {
+                    return Some(*c)
+                }
+            }
+        }
+        else {
+            for c in &self.get_node(r.unwrap()).children {
+                println!("{:?}", self.trie_nodes[*c]);
+                if self.trie_nodes[*c].input == input {
+                    return Some(*c)
+                }
+            }
+        }
+        return None
     }
 
     /// Convenience method to map a string to a command. Will panic if string contains a
@@ -183,10 +210,23 @@ mod tests {
     #[test]
     pub fn test_str_cmd_insertion() {
         let mut input_trie = InputTrie::new();
-        input_trie.add_cmd_str("cc", Command::Create(CreateCommand(CreateObject::Class)));
-        input_trie.add_cmd_str("cp", Command::Create(CreateCommand(CreateObject::Package)));
+        input_trie.add_cmd_str("cc", Command::Create(CreateCommand(CreateObject::Class))).unwrap();
+        input_trie.add_cmd_str("cp", Command::Create(CreateCommand(CreateObject::Package))).unwrap();
         assert_eq!(input_trie.roots.len(), 1);
         assert_eq!(input_trie.trie_nodes.len(), 3);
+    }
+
+    #[test]
+    pub fn test_advance_node_ref() {
+        let mut input_trie = InputTrie::new();
+        input_trie.add_cmd_str("cc", Command::Create(CreateCommand(CreateObject::Class))).unwrap();
+        input_trie.add_cmd_str("cp", Command::Create(CreateCommand(CreateObject::Package))).unwrap();
+        println!("{:?}", input_trie);
+        assert_eq!(input_trie.advance_node_ref(None, (VKC::C, 0)), Some(0));
+        assert_eq!(input_trie.advance_node_ref(Some(0), (VKC::C, 0)), Some(1));
+        assert_eq!(input_trie.advance_node_ref(Some(0), (VKC::P, 0)), Some(2));
+        assert_eq!(input_trie.advance_node_ref(Some(1), (VKC::P, 0)), None);
+        assert_eq!(input_trie.advance_node_ref(Some(2), (VKC::P, 0)), None);
     }
 }
 
