@@ -1,6 +1,7 @@
 //! Module pertaining to application state. All views will keep a reference to this state.
 
 use java_model::*;
+use command;
 use std::sync::{Arc, Mutex};
 
 pub struct Project {
@@ -9,6 +10,7 @@ pub struct Project {
 
 pub struct State {
     pub project: Project,
+    pub command_buffer: Mutex<command::CommandBuffer>,
 }
 
 impl Project {
@@ -23,6 +25,7 @@ impl State {
     pub fn new() -> State {
         State {
             project: Project::new(),
+            command_buffer: Mutex::new(command::CommandBuffer::new()),
         }
     }
 }

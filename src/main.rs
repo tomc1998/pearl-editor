@@ -1,7 +1,10 @@
 extern crate quick_gfx as qgfx;
 extern crate cgmath;
+extern crate winit;
+extern crate smallvec;
 
 mod common;
+mod command;
 mod view;
 mod java_model;
 mod state;
@@ -61,6 +64,11 @@ fn main() {
             } => {
                 match ev {
                     qgfx::WindowEvent::Closed => closed = true,
+                    qgfx::WindowEvent::KeyboardInput{ device_id: _, input: k } => {
+                        if k.virtual_keycode.is_some() && k.state == winit::ElementState::Pressed {
+                            (*state.command_buffer.lock().unwrap()).add_key((k.virtual_keycode.unwrap(), 0));
+                        }
+                    }
                     _ => (),
                 }
             }
