@@ -42,17 +42,21 @@ impl Prompt {
 
     /// Call to input a char in the prompt. If the user finished the prompt with this input, the
     /// callback will be called.
-    pub fn char_input(&mut self, c: char) {
+    /// 
+    /// Returns true if prompt finished here.
+    pub fn char_input(&mut self, c: char) -> bool {
         match c {
             '\r' | '\n' => {
                 self.curr_prompt += 1;
                 if self.curr_prompt >= self.prompts.len() {
                     (self.callback)(&self.inputs[..]);
+                    return true;
                 }
             }
             c => {
                 self.inputs[self.curr_prompt].push(c)
             }
         }
+        return false;
     }
 }

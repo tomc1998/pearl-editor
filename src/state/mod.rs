@@ -44,20 +44,13 @@ impl State {
     pub fn prompt(
         this: Arc<State>,
         prompts: Vec<String>,
-        mut callback: Box<FnMut(&[String])>,
+        callback: Box<FnMut(&[String])>,
     ) -> bool {
         let mut prompt = this.curr_prompt.lock().unwrap();
         if prompt.is_some() {
             return true;
         } else {
-            let this = this.clone();
-            *prompt = Some(prompt::Prompt::new(
-                prompts,
-                Box::new(move |data| {
-                    callback(data);
-                    *this.curr_prompt.lock().unwrap() = None;
-                }),
-            ));
+            *prompt = Some(prompt::Prompt::new(prompts, callback));
             true
         }
     }
@@ -83,7 +76,12 @@ impl State {
                     );
                     // If prompt is showing, send data to that first
                     if self.curr_prompt.lock().unwrap().is_some() {
-                        self.curr_prompt.lock().unwrap().as_mut().unwrap().key_input(i);
+                        self.curr_prompt
+                            .lock()
+                            .unwrap()
+                            .as_mut()
+                            .unwrap()
+                            .key_input(i);
                     } else {
                         // Otherwise, send data to the command buffer
                         // Special case, clear the command buffer on C-g
@@ -94,12 +92,16 @@ impl State {
             }
             qgfx::WindowEvent::ReceivedCharacter(c) => {
                 if self.curr_prompt.lock().unwrap().is_some() {
-                    self.curr_prompt
+                    if self.curr_prompt
                         .lock()
                         .unwrap()
                         .as_mut()
                         .unwrap()
-                        .char_input(c);
+                        .char_input(c)
+                    {
+                        *self.curr_prompt.lock().unwrap() = None;
+                    }
+
                 }
             }
             _ => (),
