@@ -23,6 +23,7 @@ impl CommandBufferView {
     /// * `display_size` - The size of the current display, so that the command buffer can be
     /// rendered at the bottom of the screen.
     pub fn render(&self, g: &RendererController, display_size: cgmath::Vector2<f32>) {
+        if self.state.command_buffer.lock().unwrap().is_empty() { return; } 
         g.rect(
             &[0.0, display_size.y - 24.0, display_size.x, 24.0],
             &[0.1, 0.1, 0.4, 1.0],

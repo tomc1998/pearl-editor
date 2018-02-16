@@ -66,7 +66,7 @@ pub enum CreateObject {
 
 /// A create command, for creating classes, interfaces, methods etc.
 #[derive(Clone, Debug)]
-pub struct CreateCommand(CreateObject);
+pub struct CreateCommand(pub CreateObject);
 
 /// A command
 #[derive(Clone, Debug)]
@@ -111,6 +111,10 @@ impl CommandBuffer {
         }
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.input_buf.is_empty()
+    }
+
     pub fn get_input_as_str(&self) -> String {
         let mut input_str = String::from("");
         for i in &self.input_buf {
@@ -140,5 +144,11 @@ impl CommandBuffer {
             self.cmd_buf.push(cmd.unwrap().clone());
             println!("Registered command: {:?}", cmd.unwrap());
         }
+    }
+
+    /// Get a command if queued
+    pub fn poll_cmd(&mut self) -> Option<Command> {
+        if self.cmd_buf.len() == 0 { None } 
+        else { Some(self.cmd_buf.remove(0)) }
     }
 }

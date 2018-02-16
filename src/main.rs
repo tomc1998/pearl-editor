@@ -94,5 +94,17 @@ fn main() {
             }
             _ => (),
         });
+
+        // Poll command buffer & execute command
+        use command::*;
+        match state.command_buffer.lock().unwrap().poll_cmd() {
+            Some(Command::Create(CreateCommand(CreateObject::Class))) => {
+                println!("Creating class");
+            }
+            Some(Command::Create(CreateCommand(CreateObject::Package))) => {
+                println!("Creating package");
+            }
+            None => ()
+        }
     }
 }
