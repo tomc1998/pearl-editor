@@ -16,8 +16,7 @@ pub enum Declaration {
 impl Declaration {
     pub fn name(&self) -> &str {
         match self {
-            &Declaration::Class(ref c) => c.name.as_ref()
+            &Declaration::Class(ref c) => c.name.as_ref(),
         }
     }
 }
-

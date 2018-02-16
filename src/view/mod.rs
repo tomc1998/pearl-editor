@@ -1,5 +1,9 @@
 //! A module which encompasses generating vertex data to render.
 
+mod command_buffer;
+
+pub use self::command_buffer::*;
+
 use java_model::*;
 use qgfx::{RendererController, FontHandle};
 use common::Rect;
@@ -10,9 +14,6 @@ use state;
 pub struct PackageListView {
     pub state: std::sync::Arc<state::State>,
 
-    /// The width of this view
-    pub width: f32,
-
     pub font: FontHandle,
 }
 
@@ -20,7 +21,6 @@ impl PackageListView {
     pub fn new(state: std::sync::Arc<state::State>, font: FontHandle) -> PackageListView {
         PackageListView {
             state: state,
-            width: 128.0,
             font: font,
         }
     }
@@ -60,18 +60,10 @@ impl PackageListView {
 
     /// Renders a list of packages.
     /// Returns the bounding box used up from rendering.
-    pub fn render(
-        &self,
-        g: &RendererController,
-        offset: cgmath::Vector2<f32>,
-        packages: &[Package],
-    ) {
+    pub fn render(&self, g: &RendererController, offset: cgmath::Vector2<f32>) {
         let mut pos = offset;
-        for p in packages {
-            g.rect(
-                &[pos.x, pos.y, self.width - 16.0, 32.0],
-                &[0.1, 0.1, 0.1, 1.0],
-            );
+        for p in &*self.state.project.package_list.lock().unwrap() {
+            g.rect(&[pos.x, pos.y, 128.0 - 16.0, 32.0], &[0.1, 0.1, 0.1, 1.0]);
             g.text(
                 p.name.as_ref(),
                 &[pos.x, pos.y + 32.0 / 2.0],
@@ -81,7 +73,7 @@ impl PackageListView {
             pos.y += 32.0;
 
             pos.x += 16.0;
-            let rect = self.render_decl_list(g, &p.decl_list[..], pos, 32.0, self.width - 16.0);
+            let rect = self.render_decl_list(g, &p.decl_list[..], pos, 32.0, 128.0 - 16.0);
             pos.x -= 16.0;
             pos.y += rect.size.y;
         }

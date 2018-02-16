@@ -1,4 +1,4 @@
-use ::Modifier;
+use Modifier;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MemberType {
@@ -23,7 +23,7 @@ pub struct Class {
     pub extends: String,
     pub members: Vec<ClassMember>,
     pub inner_classes: Vec<Class>,
-    pub modifiers: Vec<Modifier>
+    pub modifiers: Vec<Modifier>,
 }
 
 impl Class {
@@ -39,4 +39,3 @@ impl Class {
         }
     }
 }
-

@@ -6,9 +6,6 @@ use super::{InputChunk, Command};
 use std::fmt;
 use std::error::Error;
 
-pub type NodeRef = usize;
-
-
 /// Convert a char to keycode if possible.
 fn char_to_keycode(c: char) -> Option<VKC> {
     match c {
@@ -41,6 +38,8 @@ fn char_to_keycode(c: char) -> Option<VKC> {
         _ => None,
     }
 }
+
+pub type NodeRef = usize;
 
 #[derive(Clone, Debug)]
 struct TrieNode {
@@ -115,7 +114,7 @@ impl InputTrie {
         let input_chunks: Vec<InputChunk> = cmd_str
             .chars()
             .map(|c| {
-                (
+                InputChunk(
                     char_to_keycode(c).unwrap(),
                     if c.is_uppercase() { 0b1000 } else { 0b0000 },
                 )

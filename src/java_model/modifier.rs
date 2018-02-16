@@ -13,4 +13,3 @@ pub enum Modifier {
     Native,
     Strictfp,
 }
-
