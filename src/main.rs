@@ -66,7 +66,14 @@ fn main() {
                     qgfx::WindowEvent::Closed => closed = true,
                     qgfx::WindowEvent::KeyboardInput{ device_id: _, input: k } => {
                         if k.virtual_keycode.is_some() && k.state == winit::ElementState::Pressed {
-                            (*state.command_buffer.lock().unwrap()).add_key((k.virtual_keycode.unwrap(), 0));
+                            // Special case, clear the command buffer on C-g
+                            if common::mods_to_bitflags(k.modifiers) == 0b0100 &&
+                                k.virtual_keycode.unwrap() == winit::VirtualKeyCode::G {
+                                state.command_buffer.lock().unwrap().reset_input();
+                            }
+                            else {
+                                (*state.command_buffer.lock().unwrap()).add_key((k.virtual_keycode.unwrap(), 0));
+                            }
                         }
                     }
                     _ => (),

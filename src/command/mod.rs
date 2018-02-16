@@ -75,11 +75,18 @@ impl CommandBuffer {
         }
     }
 
+    /// Clear the current input buffer and reset the node_ref to None
+    pub fn reset_input(&mut self) {
+        self.node_ref = None;
+        self.input_buf.clear();
+    }
+
     /// Add a character to the command buffer. This should be called when user input is detected.
     pub fn add_key(&mut self, input: InputChunk) {
         self.input_buf.push(input);
         self.node_ref = self.input_trie.advance_node_ref(self.node_ref, input);
         if self.node_ref.is_none() {
+            self.input_buf.clear();
             return;
         }
         let cmd = self.input_trie.get_cmd(self.node_ref.unwrap());
@@ -91,4 +98,5 @@ impl CommandBuffer {
         }
     }
 }
+
 
