@@ -1,4 +1,6 @@
+use winit::VirtualKeyCode as VKC;
 use std::boxed::Box;
+use input::InputChunk;
 
 /// Generic text prompt
 pub struct Prompt {
@@ -9,25 +11,48 @@ pub struct Prompt {
     pub inputs: Vec<String>,
 
     /// Called when the user finishes the prompt. Takes a slice of user inputs, the same length as
-    /// the length of prompts.
-    pub callback: Box<FnOnce(&[String])>,
+    /// the length of prompts. 
+    callback: Box<FnMut(&[String])>,
+
+    /// The index of the current prompt
+    curr_prompt: usize,
 }
 
 impl Prompt {
-    pub fn new<F: 'static + FnOnce(&[String])>(prompts: Vec<String>, callback: F) -> Prompt {
+    pub fn new(prompts: Vec<String>, callback: Box<FnMut(&[String])>) -> Prompt {
+        if prompts.len() == 0 {
+            panic!("Creating a prompt of length 0")
+        }
         Prompt {
             inputs: vec!["".to_owned(); prompts.len()],
             prompts: prompts,
-            callback: Box::new(callback),
+            callback: callback,
+            curr_prompt: 0,
+        }
+    }
+
+    /// Key input for 'control' inputs, like S-<TAB> for example
+    pub fn key_input(&mut self, i: InputChunk) {
+        if i.0 == VKC::Tab && i.1 == 0b1000 { // S-<TAB>
+            if self.curr_prompt > 0 {
+                self.curr_prompt -= 1;
+            }
         }
     }
 
     /// Call to input a char in the prompt. If the user finished the prompt with this input, the
     /// callback will be called.
-    pub fn char_input(&self, c: char) {
+    pub fn char_input(&mut self, c: char) {
         match c {
-            '\r' | '\n' => println!("NEWLINE"),
-            _ => (),
+            '\r' | '\n' => {
+                self.curr_prompt += 1;
+                if self.curr_prompt >= self.prompts.len() {
+                    (self.callback)(&self.inputs[..]);
+                }
+            }
+            c => {
+                self.inputs[self.curr_prompt].push(c)
+            }
         }
     }
 }

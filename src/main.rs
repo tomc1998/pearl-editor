@@ -9,9 +9,11 @@ mod prompt;
 mod view;
 mod java_model;
 mod state;
+mod input;
 
 use std::collections::HashSet;
 use java_model::*;
+use std::boxed::Box;
 
 /// Poll the command buffer & execute the command
 fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
@@ -21,9 +23,9 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
         Some(Command::Create(CreateCommand(CreateObject::Class))) => {
             state::State::prompt(state.clone(),
                 vec!["Package Name".to_owned(), "Class Name".to_owned()],
-                |data| {
+                Box::new(|data| {
                     println!("PROMPTED: {:?}", data);
-                },
+                }),
             );
         }
         Some(Command::Create(CreateCommand(CreateObject::Package))) => {

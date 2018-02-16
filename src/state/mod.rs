@@ -7,6 +7,7 @@ use command;
 use prompt;
 use std::sync::{Arc, Mutex};
 use qgfx;
+use input;
 
 pub struct Project {
     pub package_list: Arc<Mutex<Vec<Package>>>,
@@ -40,16 +41,16 @@ impl State {
     /// * `prompts` - The items to prompt the user for
     /// * `callback` - Called when user completes prompt. Accepts a slice of strings, which are the
     /// user's inputs (corresponding to the given prompts)
-    pub fn prompt<F: 'static + FnOnce(&[String])>(this: Arc<State>, prompts: Vec<String>, callback: F) -> bool {
+    pub fn prompt(this: Arc<State>, prompts: Vec<String>, mut callback: Box<FnMut(&[String])>) -> bool {
         let mut prompt = this.curr_prompt.lock().unwrap();
         if prompt.is_some() {
             return true;
         } else {
             let this = this.clone();
-            *prompt = Some(prompt::Prompt::new(prompts, move |data| {
+            *prompt = Some(prompt::Prompt::new(prompts, Box::new(move |data| {
                 callback(data);
                 *this.curr_prompt.lock().unwrap() = None;
-            }));
+            })));
             true
         }
     }
@@ -75,7 +76,7 @@ impl State {
                         // Otherwise, send data to the command buffer
                         // Special case, clear the command buffer on C-g
                         (*self.command_buffer.lock().unwrap()).add_key(
-                            command::InputChunk(
+                            input::InputChunk(
                                 k.virtual_keycode
                                     .unwrap(),
                                 0,
@@ -87,7 +88,7 @@ impl State {
             }
             qgfx::WindowEvent::ReceivedCharacter(c) => {
                 if self.curr_prompt.lock().unwrap().is_some() {
-                    self.curr_prompt.lock().unwrap().as_ref().unwrap().char_input(c);
+                    self.curr_prompt.lock().unwrap().as_mut().unwrap().char_input(c);
                 }
             }
             _ => (),
