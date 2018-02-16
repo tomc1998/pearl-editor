@@ -148,7 +148,10 @@ impl CommandBuffer {
 
     /// Get a command if queued
     pub fn poll_cmd(&mut self) -> Option<Command> {
-        if self.cmd_buf.len() == 0 { None } 
-        else { Some(self.cmd_buf.remove(0)) }
+        if self.cmd_buf.len() == 0 {
+            None
+        } else {
+            Some(self.cmd_buf.remove(0))
+        }
     }
 }

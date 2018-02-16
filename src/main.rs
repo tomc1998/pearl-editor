@@ -5,12 +5,33 @@ extern crate smallvec;
 
 mod common;
 mod command;
+mod prompt;
 mod view;
 mod java_model;
 mod state;
 
 use std::collections::HashSet;
 use java_model::*;
+
+/// Poll the command buffer & execute the command
+fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
+    // Poll command buffer & execute command
+    use command::*;
+    match state.command_buffer.lock().unwrap().poll_cmd() {
+        Some(Command::Create(CreateCommand(CreateObject::Class))) => {
+            state::State::prompt(state.clone(),
+                vec!["Package Name".to_owned(), "Class Name".to_owned()],
+                |data| {
+                    println!("PROMPTED: {:?}", data);
+                },
+            );
+        }
+        Some(Command::Create(CreateCommand(CreateObject::Package))) => {
+            println!("Creating package");
+        }
+        None => (),
+    }
+}
 
 fn main() {
     // Initialise state
@@ -68,43 +89,16 @@ fn main() {
                 event: ev,
                 window_id: _,
             } => {
-                match ev {
-                    qgfx::WindowEvent::Closed => closed = true,
-                    qgfx::WindowEvent::KeyboardInput {
-                        device_id: _,
-                        input: k,
-                    } => {
-                        if k.virtual_keycode.is_some() && k.state == winit::ElementState::Pressed {
-                            // Special case, clear the command buffer on C-g
-                            if common::mods_to_bitflags(k.modifiers) == 0b0100 &&
-                                k.virtual_keycode.unwrap() == winit::VirtualKeyCode::G
-                            {
-                                state.command_buffer.lock().unwrap().reset_input();
-                            } else {
-                                (*state.command_buffer.lock().unwrap()).add_key(command::InputChunk(
-                                    k.virtual_keycode
-                                        .unwrap(),
-                                    0,
-                                ));
-                            }
-                        }
+                if !state.process_input(&ev) {
+                    match ev {
+                        qgfx::WindowEvent::Closed => closed = true,
+                        _ => (),
                     }
-                    _ => (),
                 }
             }
             _ => (),
         });
 
-        // Poll command buffer & execute command
-        use command::*;
-        match state.command_buffer.lock().unwrap().poll_cmd() {
-            Some(Command::Create(CreateCommand(CreateObject::Class))) => {
-                println!("Creating class");
-            }
-            Some(Command::Create(CreateCommand(CreateObject::Package))) => {
-                println!("Creating package");
-            }
-            None => ()
-        }
+        poll_cmd_buffer(state.clone());
     }
 }
