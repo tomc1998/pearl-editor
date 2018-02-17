@@ -58,11 +58,14 @@ impl PromptInput {
 
     /// Key input for 'control' inputs, like S-<TAB> for example
     pub fn key_input(&mut self, i: InputChunk) {
-        if i.0 == VKC::Tab && i.1 == 0b1000 {
-            // S-<TAB>
-            if self.curr_prompt > 0 {
+        match (i.0, i.1) {
+            (VKC::Tab, 0b1000) => if self.curr_prompt > 0 {
                 self.curr_prompt -= 1;
-            }
+            },
+            (VKC::Back, _) => if self.inputs[self.curr_prompt].len() > 0 {
+                self.inputs[self.curr_prompt].pop();
+            },
+            _ => (),
         }
     }
 
@@ -79,7 +82,11 @@ impl PromptInput {
                     return true;
                 }
             }
-            c => self.inputs[self.curr_prompt].push(c),
+            c => {
+                if !c.is_control() {
+                    self.inputs[self.curr_prompt].push(c);
+                }
+            }
         }
         return false;
     }
