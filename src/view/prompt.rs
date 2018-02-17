@@ -34,7 +34,7 @@ impl PromptInputView {
             &[0.1, 0.1, 0.4, 1.0],
         );
 
-        let mut pos = cgmath::Vector2{x: 0.0, y: 0.0};
+        let mut pos = cgmath::Vector2 { x: 0.0, y: 0.0 };
 
         let prompt_col = [0.4, 0.4, 0.9, 0.4];
         let active_prompt_col = [7.0, 7.0, 1.0, 1.0];
@@ -63,6 +63,20 @@ impl PromptInputView {
             &[1.0, 1.0, 1.0, 1.0],
         );
 
+        // Render completions
+        for c in prompt.get_completions() {
+            pos.y += 24.0;
+            g.rect(
+                &[pos.x, display_size.y - 24.0 - pos.y, display_size.x - pos.x, 24.0],
+                &[0.1, 0.1, 0.4, 1.0],
+            );
+            g.text(
+                &c,
+                &[8.0 + pos.x, display_size.y - 8.0 - pos.y],
+                self.font,
+                &[1.0, 1.0, 1.0, 1.0],
+            );
+        }
+
     }
 }
-

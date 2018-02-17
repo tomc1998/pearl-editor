@@ -125,7 +125,7 @@ fn main() {
                 event: ev,
                 window_id: _,
             } => {
-                if !state.process_input(&ev) {
+                if !state::State::process_input(state.clone(), &ev) {
                     match ev {
                         qgfx::WindowEvent::Closed => closed = true,
                         _ => (),

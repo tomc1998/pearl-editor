@@ -91,7 +91,7 @@ impl State {
     }
 
     /// Returns true if input was used
-    pub fn process_input(&self, ev: &qgfx::WindowEvent) -> bool {
+    pub fn process_input(this: Arc<State>, ev: &qgfx::WindowEvent) -> bool {
         match *ev {
             qgfx::WindowEvent::KeyboardInput {
                 device_id: _,
@@ -102,41 +102,34 @@ impl State {
                     if common::mods_to_bitflags(k.modifiers) == 0b0100 &&
                         k.virtual_keycode.unwrap() == winit::VirtualKeyCode::G
                     {
-                        self.command_buffer.lock().unwrap().reset_input();
-                        *self.curr_prompt.lock().unwrap() = None;
+                        this.command_buffer.lock().unwrap().reset_input();
+                        *this.curr_prompt.lock().unwrap() = None;
                     }
                     let i = input::InputChunk::from_modifiers_state(
                         k.virtual_keycode.unwrap(),
                         k.modifiers,
                     );
                     // If prompt is showing, send data to that first
-                    if self.curr_prompt.lock().unwrap().is_some() {
-                        self.curr_prompt
-                            .lock()
-                            .unwrap()
-                            .as_mut()
-                            .unwrap()
-                            .key_input(i);
+                    if this.curr_prompt.lock().unwrap().is_some() {
+                        let mut curr_prompt = this.curr_prompt.lock().unwrap();
+                        curr_prompt.as_mut().unwrap().key_input(i);
+                        curr_prompt.as_mut().unwrap().update_completions(this.clone());
                     } else {
                         // Otherwise, send data to the command buffer
                         // Special case, clear the command buffer on C-g
-                        (*self.command_buffer.lock().unwrap()).add_key(i);
+                        (*this.command_buffer.lock().unwrap()).add_key(i);
                     }
                     return true;
                 }
             }
             qgfx::WindowEvent::ReceivedCharacter(c) => {
-                if self.curr_prompt.lock().unwrap().is_some() {
-                    if self.curr_prompt
-                        .lock()
-                        .unwrap()
-                        .as_mut()
-                        .unwrap()
-                        .char_input(c)
-                    {
-                        *self.curr_prompt.lock().unwrap() = None;
+                if this.curr_prompt.lock().unwrap().is_some() {
+                    let mut curr_prompt = this.curr_prompt.lock().unwrap();
+                    if curr_prompt.as_mut().unwrap().char_input(c) {
+                        *this.curr_prompt.lock().unwrap() = None;
+                    } else {
+                        curr_prompt.as_mut().unwrap().update_completions(this.clone());
                     }
-
                 }
             }
             _ => (),
