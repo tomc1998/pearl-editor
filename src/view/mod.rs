@@ -58,23 +58,42 @@ impl PackageListView {
 
     }
 
+    /// Function to render a package recursively. Returns a rect which contains the space used up.
+    fn render_pkg(
+        &self,
+        g: &RendererController,
+        pos: cgmath::Vector2<f32>,
+        pkg: &Package,
+    ) -> Rect {
+        // render this package
+        g.rect(&[pos.x, pos.y, 128.0 - 16.0, 32.0], &[0.1, 0.1, 0.1, 1.0]);
+        g.text(
+            pkg.name.as_ref(),
+            &[pos.x, pos.y + 32.0 / 2.0],
+            self.font,
+            &[1.0, 1.0, 1.0, 1.0],
+        ).unwrap();
+
+        let mut indented = cgmath::Vector2 {
+            x: pos.x + 16.0,
+            y: pos.y + 32.0,
+        };
+        for p in &pkg.package_list {
+            let rect = self.render_pkg(g, indented, p);
+            indented.y += rect.size.y;
+        }
+
+        let rect = self.render_decl_list(g, &pkg.decl_list[..], indented, 32.0, 128.0 - 16.0);
+        return Rect::new(pos.x, pos.y, 128.0, indented.y - pos.y + rect.size.y);
+    }
+
     /// Renders a list of packages.
     /// Returns the bounding box used up from rendering.
     pub fn render(&self, g: &RendererController, offset: cgmath::Vector2<f32>) {
         let mut pos = offset;
-        for p in &*self.state.project.package_list.lock().unwrap() {
-            g.rect(&[pos.x, pos.y, 128.0 - 16.0, 32.0], &[0.1, 0.1, 0.1, 1.0]);
-            g.text(
-                p.name.as_ref(),
-                &[pos.x, pos.y + 32.0 / 2.0],
-                self.font,
-                &[1.0, 1.0, 1.0, 1.0],
-            ).unwrap();
-            pos.y += 32.0;
-
-            pos.x += 16.0;
-            let rect = self.render_decl_list(g, &p.decl_list[..], pos, 32.0, 128.0 - 16.0);
-            pos.x -= 16.0;
+        let package_list = &*self.state.project.package_list.lock().unwrap();
+        for p in package_list {
+            let rect = self.render_pkg(g, pos, p);
             pos.y += rect.size.y;
         }
     }

@@ -26,7 +26,7 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                 vec!["Package Name".to_owned(), "Class Name".to_owned()],
                 Box::new(move |data| {
                     let pkg_name = &data[0];
-                    state_clone.project.add_subpackage(&pkg_name);
+                    state_clone.project.add_package(&pkg_name);
                 }),
             );
         }
@@ -65,9 +65,10 @@ fn main() {
             class.name = format!("MyClass{}", ii);
             declarations.push(Declaration::Class(class));
         }
-        let mut p = Package::new(&format!("com.tom.package{}", jj)).0;
-        p.decl_list = declarations;
-        state.project.package_list.lock().unwrap().push(p);
+        let p = state.project.add_package(&format!("com.tom.package{}", jj));
+        unsafe {
+            (*p).decl_list = declarations;
+        }
     }
 
     // Create views

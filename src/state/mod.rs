@@ -35,7 +35,7 @@ impl Project {
     /// See package::Package::new() for details - the mut pointer returned isn't guaranteed to be
     /// valid forever, and is only a convenience measure to quickly add a class to the deepest
     /// package.
-    pub fn add_subpackage(&self, name: &str) -> *mut Package {
+    pub fn add_package(&self, name: &str) -> *mut Package {
         let first_pkg_name = &name[0..name.find(".").unwrap_or(name.len())];
         let mut package_list = self.package_list.lock().unwrap();
         for p in &mut *package_list {
