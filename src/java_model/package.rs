@@ -10,13 +10,18 @@ impl Package {
     /// Creates a package from a name. Will split on the '.' char into subpackages.
     /// This returns the root package, and also a mut pointer to the deepest package created. This
     /// is just for convenience.
+    /// 
+    /// # Returns
+    /// Returns the root package, and optionally a mut pointer to the deepest package created. If
+    /// this is none, only 1 package was created. Since we pass the root package back on the stack,
+    /// holding a pointer to this package results in a segfault.
     ///
     /// # Caution
     /// As soon as any of the parent packages of the returned package pointer are modified, the
     /// package pointer will be invalidated. The package pointer isn't meant to be stored for long
     /// time use, and is mainly for the convenience of adding a package then adding a class to the
     /// deepest package added, without having to traverse the tree twice.
-    pub fn new(name: &str) -> (Package, *mut Package) {
+    pub fn new(name: &str) -> (Package, Option<*mut Package>) {
         assert!(name.len() > 0, "Trying to create package with name len 0");
         let mut splits = name.split(".");
         let mut root = Package {
@@ -37,7 +42,12 @@ impl Package {
             }
         }
 
-        return (root, curr_pkg);
+        if curr_pkg == &mut root {
+            return (root, None);
+        }
+        else {
+            return (root, Some(curr_pkg));
+        }
     }
 
     /// Given the (full) name of a package, traces down the tree until there's a divergence, then

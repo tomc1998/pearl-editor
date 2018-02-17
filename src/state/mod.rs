@@ -51,9 +51,12 @@ impl Project {
                 return p.add_subpackage(name);
             }
         }
-        let (pkg, deepest) = Package::new(name);
+        let (pkg, mut deepest) = Package::new(name);
         package_list.push(pkg);
-        return deepest;
+        if deepest.is_none() {
+            deepest = Some(package_list.last_mut().unwrap() as *mut Package);
+        }
+        return deepest.unwrap();
     }
 }
 
