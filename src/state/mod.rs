@@ -23,6 +23,30 @@ impl Project {
     pub fn new() -> Project {
         Project { package_list: Arc::new(Mutex::new(Vec::new())) }
     }
+
+    /// Add a fully qualified package name. If the start of the package name is already used, trace
+    /// down the tree and insert new package in the appropriate replaces. Return a mutable
+    /// pointer to the last created package.
+    /// 
+    /// This will lock the package list mutex, and the mutex will stay locked whilst you hold the
+    /// package reference.
+    /// 
+    /// # Caution
+    /// See package::Package::new() for details - the mut pointer returned isn't guaranteed to be
+    /// valid forever, and is only a convenience measure to quickly add a class to the deepest
+    /// package.
+    pub fn add_subpackage(&self, name: &str) -> *mut Package {
+        let first_pkg_name = &name[0..name.find(".").unwrap_or(name.len())];
+        let mut package_list = self.package_list.lock().unwrap();
+        for p in &mut *package_list {
+            if p.name == first_pkg_name {
+                return p.add_subpackage(name);
+            }
+        }
+        let (pkg, deepest) = Package::new(name);
+        package_list.push(pkg);
+        return deepest
+    }
 }
 
 impl State {

@@ -21,10 +21,12 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
     use command::*;
     match state.command_buffer.lock().unwrap().poll_cmd() {
         Some(Command::Create(CreateCommand(CreateObject::Class))) => {
+            let state_clone = state.clone();
             state::State::prompt(state.clone(),
                 vec!["Package Name".to_owned(), "Class Name".to_owned()],
-                Box::new(|data| {
-                    println!("PROMPTED: {:?}", data);
+                Box::new(move |data| {
+                    let pkg_name = &data[0];
+                    state_clone.project.add_subpackage(&pkg_name);
                 }),
             );
         }
@@ -63,7 +65,7 @@ fn main() {
             class.name = format!("MyClass{}", ii);
             declarations.push(Declaration::Class(class));
         }
-        let mut p = Package::new(format!("com.tom.package{}", jj));
+        let mut p = Package::new(&format!("com.tom.package{}", jj)).0;
         p.decl_list = declarations;
         state.project.package_list.lock().unwrap().push(p);
     }
