@@ -10,27 +10,35 @@ use qgfx;
 use input;
 
 pub struct Project {
-    pub package_list: Arc<Mutex<Vec<Package>>>,
+    pub package_list: Mutex<Vec<Package>>,
+
+    /// A reference to the current package. This will be highlighted when rendering, and allows for
+    /// faster editing due to context-aware commands (i.e. create class will already have package
+    /// filled in)
+    pub curr_pkg: Mutex<Option<String>>,
 }
 
 pub struct State {
     pub project: Project,
     pub command_buffer: Mutex<command::CommandBuffer>,
-    pub curr_prompt: Mutex<Option<prompt::Prompt>>,
+    pub curr_prompt: Mutex<Option<prompt::PromptInput>>,
 }
 
 impl Project {
     pub fn new() -> Project {
-        Project { package_list: Arc::new(Mutex::new(Vec::new())) }
+        Project {
+            package_list: Mutex::new(Vec::new()),
+            curr_pkg: Mutex::new(None),
+        }
     }
 
     /// Add a fully qualified package name. If the start of the package name is already used, trace
     /// down the tree and insert new package in the appropriate replaces. Return a mutable
     /// pointer to the last created package.
-    /// 
+    ///
     /// This will lock the package list mutex, and the mutex will stay locked whilst you hold the
     /// package reference.
-    /// 
+    ///
     /// # Caution
     /// See package::Package::new() for details - the mut pointer returned isn't guaranteed to be
     /// valid forever, and is only a convenience measure to quickly add a class to the deepest
@@ -45,7 +53,7 @@ impl Project {
         }
         let (pkg, deepest) = Package::new(name);
         package_list.push(pkg);
-        return deepest
+        return deepest;
     }
 }
 
@@ -67,14 +75,14 @@ impl State {
     /// user's inputs (corresponding to the given prompts)
     pub fn prompt(
         this: Arc<State>,
-        prompts: Vec<String>,
+        prompts: Vec<prompt::PromptType>,
         callback: Box<FnMut(&[String])>,
     ) -> bool {
         let mut prompt = this.curr_prompt.lock().unwrap();
         if prompt.is_some() {
             return true;
         } else {
-            *prompt = Some(prompt::Prompt::new(prompts, callback));
+            *prompt = Some(prompt::PromptInput::new(prompts, callback));
             true
         }
     }

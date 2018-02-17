@@ -9,8 +9,8 @@ pub struct Package {
 impl Package {
     /// Creates a package from a name. Will split on the '.' char into subpackages.
     /// This returns the root package, and also a mut pointer to the deepest package created. This
-    /// is just for convenience. 
-    /// 
+    /// is just for convenience.
+    ///
     /// # Caution
     /// As soon as any of the parent packages of the returned package pointer are modified, the
     /// package pointer will be invalidated. The package pointer isn't meant to be stored for long

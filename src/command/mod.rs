@@ -17,14 +17,23 @@ pub enum CreateObject {
     Package,
 }
 
-/// A create command, for creating classes, interfaces, methods etc.
+/// The noun for the create command - what object are we creating?
+#[derive(Clone, Debug)]
+pub enum SelectObject {
+    Package,
+}
+
 #[derive(Clone, Debug)]
 pub struct CreateCommand(pub CreateObject);
+
+#[derive(Clone, Debug)]
+pub struct SelectCommand(pub SelectObject);
 
 /// A command
 #[derive(Clone, Debug)]
 pub enum Command {
     Create(CreateCommand),
+    Select(SelectCommand),
 }
 
 /// Holds 2 butffers storing the user's currently entered command string, and also all the executed
@@ -51,6 +60,9 @@ impl CommandBuffer {
             .unwrap();
         input_trie
             .add_cmd_str("cp", Command::Create(CreateCommand(CreateObject::Package)))
+            .unwrap();
+        input_trie
+            .add_cmd_str("sp", Command::Select(SelectCommand(SelectObject::Package)))
             .unwrap();
         return input_trie;
     }

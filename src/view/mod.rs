@@ -59,12 +59,7 @@ impl PackageListView {
     }
 
     /// Function to render a package recursively. Returns a rect which contains the space used up.
-    fn render_pkg(
-        &self,
-        g: &RendererController,
-        pos: cgmath::Vector2<f32>,
-        pkg: &Package,
-    ) -> Rect {
+    fn render_pkg(&self, g: &RendererController, pos: cgmath::Vector2<f32>, pkg: &Package) -> Rect {
         // render this package
         g.rect(&[pos.x, pos.y, 128.0 - 16.0, 32.0], &[0.1, 0.1, 0.1, 1.0]);
         g.text(

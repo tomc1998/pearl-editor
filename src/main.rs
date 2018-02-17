@@ -19,11 +19,16 @@ use std::boxed::Box;
 fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
     // Poll command buffer & execute command
     use command::*;
+    use prompt::{PromptType as PT, Prompt as P};
     match state.command_buffer.lock().unwrap().poll_cmd() {
         Some(Command::Create(CreateCommand(CreateObject::Class))) => {
             let state_clone = state.clone();
-            state::State::prompt(state.clone(),
-                vec!["Package Name".to_owned(), "Class Name".to_owned()],
+            state::State::prompt(
+                state.clone(),
+                vec![
+                    PT::Package(P("Package Name".to_owned(), true)),
+                    PT::String(P("Class Name".to_owned(), false)),
+                ],
                 Box::new(move |data| {
                     let pkg_name = &data[0];
                     let pkg = state_clone.project.add_package(&pkg_name);
@@ -37,8 +42,20 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
         }
         Some(Command::Create(CreateCommand(CreateObject::Package))) => {
             let state_clone = state.clone();
-            state::State::prompt(state.clone(),
-                vec!["Package Name".to_owned()],
+            state::State::prompt(
+                state.clone(),
+                vec![PT::Package(P("Package Name".to_owned(), false))],
+                Box::new(move |data| {
+                    let pkg_name = &data[0];
+                    state_clone.project.add_package(&pkg_name);
+                }),
+            );
+        }
+        Some(Command::Select(SelectCommand(SelectObject::Package))) => {
+            let state_clone = state.clone();
+            state::State::prompt(
+                state.clone(),
+                vec![PT::Package(P("Package Name".to_owned(), true))],
                 Box::new(move |data| {
                     let pkg_name = &data[0];
                     state_clone.project.add_package(&pkg_name);
