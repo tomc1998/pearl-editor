@@ -26,7 +26,12 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                 vec!["Package Name".to_owned(), "Class Name".to_owned()],
                 Box::new(move |data| {
                     let pkg_name = &data[0];
-                    state_clone.project.add_package(&pkg_name);
+                    let pkg = state_clone.project.add_package(&pkg_name);
+                    let mut class = Class::new_empty();
+                    class.name = data[1].clone();
+                    unsafe {
+                        (*pkg).decl_list.push(Declaration::Class(class));
+                    }
                 }),
             );
         }
