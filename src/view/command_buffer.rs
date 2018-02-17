@@ -35,6 +35,6 @@ impl CommandBufferView {
             &[8.0, display_size.y - 8.0],
             self.font,
             &[1.0, 1.0, 1.0, 1.0],
-        ).unwrap();
+        );
     }
 }

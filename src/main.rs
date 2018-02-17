@@ -30,10 +30,10 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                     PT::String(P("Class Name".to_owned(), false)),
                 ],
                 Box::new(move |data| {
-                    let pkg_name = &data[0];
-                    let pkg = state_clone.project.add_package(&pkg_name);
                     let mut class = Class::new_empty();
                     class.name = data[1].clone();
+                    let pkg_name = &data[0];
+                    let pkg = state_clone.project.add_package(&pkg_name);
                     unsafe {
                         (*pkg).decl_list.push(Declaration::Class(class));
                     }
@@ -103,6 +103,7 @@ fn main() {
     // Create views
     let package_view = view::PackageListView::new(state.clone(), fh);
     let command_buffer_view = view::CommandBufferView::new(state.clone(), fh);
+    let prompt_input_view = view::PromptInputView::new(state.clone(), fh);
 
     while !closed {
         {
@@ -113,6 +114,7 @@ fn main() {
                 &controller,
                 cgmath::Vector2::new(display_w as f32, display_h as f32),
             );
+            prompt_input_view.render(&controller, cgmath::Vector2::new(display_w as f32, display_h as f32));
         }
 
         g.recv_data();

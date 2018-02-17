@@ -1,8 +1,10 @@
 //! A module which encompasses generating vertex data to render.
 
 mod command_buffer;
+mod prompt;
 
 pub use self::command_buffer::*;
+pub use self::prompt::*;
 
 use java_model::*;
 use qgfx::{RendererController, FontHandle};
@@ -46,7 +48,7 @@ impl PackageListView {
                 &[pos.x, pos.y + decl_height / 2.0],
                 self.font,
                 &[1.0, 1.0, 1.0, 1.0],
-            ).unwrap();
+            );
             pos.y += decl_height;
         }
         return Rect::new(
@@ -67,7 +69,7 @@ impl PackageListView {
             &[pos.x, pos.y + 32.0 / 2.0],
             self.font,
             &[1.0, 1.0, 1.0, 1.0],
-        ).unwrap();
+        );
 
         let mut indented = cgmath::Vector2 {
             x: pos.x + 16.0,

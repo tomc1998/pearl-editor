@@ -17,6 +17,15 @@ pub enum PromptType {
     Package(Prompt),
 }
 
+impl PromptType {
+    pub fn as_str(&self) -> &str {
+        match *self {
+            PromptType::String(ref p) => &p.0,
+            PromptType::Package(ref p) => &p.0,
+        }
+    }
+}
+
 /// Generic text prompt. Contains a list of prompts, which are used to separate the prompt into
 /// sections - i.e. the promptinput may need to prompt for a package and a class name.
 pub struct PromptInput {
@@ -73,5 +82,15 @@ impl PromptInput {
             c => self.inputs[self.curr_prompt].push(c),
         }
         return false;
+    }
+
+    /// Get the index of the current prompt we're editing
+    pub fn get_curr_prompt(&self) -> usize {
+        self.curr_prompt
+    }
+
+    /// Get the current user's input
+    pub fn get_curr_input(&self) -> &str {
+        &self.inputs[self.curr_prompt]
     }
 }
