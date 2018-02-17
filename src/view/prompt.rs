@@ -29,22 +29,21 @@ impl PromptInputView {
         }
         let prompt = prompt.as_ref().unwrap();
 
-        g.rect(
-            &[0.0, display_size.y - 24.0, display_size.x, 24.0],
-            &[0.1, 0.1, 0.4, 1.0],
-        );
+        const BG_COL: [f32; 4] = [0.1, 0.1, 0.4, 1.0];
+
+        g.rect(&[0.0, display_size.y - 24.0, display_size.x, 24.0], &BG_COL);
 
         let mut pos = cgmath::Vector2 { x: 0.0, y: 0.0 };
 
-        let prompt_col = [0.4, 0.4, 0.9, 0.4];
-        let active_prompt_col = [7.0, 7.0, 1.0, 1.0];
+        const PROMPT_COL: [f32; 4] = [0.4, 0.4, 0.9, 0.4];
+        const ACTIVE_PROMPT_COL: [f32; 4] = [7.0, 7.0, 1.0, 1.0];
 
         for (ii, p) in prompt.prompts.iter().enumerate() {
             let col;
             if ii == prompt.get_curr_prompt() {
-                col = &active_prompt_col;
+                col = &ACTIVE_PROMPT_COL;
             } else {
-                col = &prompt_col;
+                col = &PROMPT_COL;
             }
 
             let (w, _h) = g.text(
@@ -63,12 +62,34 @@ impl PromptInputView {
             &[1.0, 1.0, 1.0, 1.0],
         );
 
+        const ACTIVE_COMPLETION_COL: [f32; 4] = [0.4, 0.4, 0.7, 1.0];
+
         // Render completions
-        for c in prompt.get_completions() {
+        for (ii, c) in prompt.get_completions().iter().enumerate() {
+            // Select colour
+            let col = match prompt.get_active_completion() {
+                Some(ix) => {
+                    if ix == ii {
+                        &ACTIVE_COMPLETION_COL
+                    } else {
+                        &BG_COL
+                    }
+                }
+                _ => &BG_COL,
+            };
+
+            // Inc cursor
             pos.y += 24.0;
+
+            // Render completion
             g.rect(
-                &[pos.x, display_size.y - 24.0 - pos.y, display_size.x - pos.x, 24.0],
-                &[0.1, 0.1, 0.4, 1.0],
+                &[
+                    pos.x,
+                    display_size.y - 24.0 - pos.y,
+                    display_size.x - pos.x,
+                    24.0,
+                ],
+                col,
             );
             g.text(
                 &c,
@@ -77,6 +98,5 @@ impl PromptInputView {
                 &[1.0, 1.0, 1.0, 1.0],
             );
         }
-
     }
 }

@@ -31,6 +31,9 @@ pub struct PromptInput {
 
     /// A list of the current completions
     curr_completions: Vec<String>,
+
+    /// Contains the index of the completion to use, or None if no completion selected
+    active_completion: Option<usize>,
 }
 
 impl PromptInput {
@@ -44,7 +47,12 @@ impl PromptInput {
             callback: callback,
             curr_prompt: 0,
             curr_completions: Vec::new(),
+            active_completion: None,
         }
+    }
+
+    pub fn get_active_completion(&self) -> Option<usize> {
+        self.active_completion
     }
 
     pub fn get_completions(&self) -> &[String] {
@@ -55,8 +63,28 @@ impl PromptInput {
     pub fn key_input(&mut self, i: InputChunk) {
         match (i.0, i.1) {
             (VKC::Tab, 0b1000) => {
-                if self.curr_prompt > 0 {
-                    self.curr_prompt -= 1;
+                if self.active_completion.is_some() {
+                    // Decrement completion
+                    if self.active_completion.unwrap() == 0 {
+                        self.active_completion = None
+                    } else {
+                        self.active_completion = Some(self.active_completion.unwrap() - 1);
+                    }
+                } else {
+                    // Return to prev prompt
+                    if self.curr_prompt > 0 {
+                        self.curr_prompt -= 1;
+                    }
+                }
+            }
+            (VKC::Tab, 0b0000) => {
+                // Select completion
+                if self.active_completion.is_none() {
+                    self.active_completion = Some(0);
+                } else if self.active_completion.unwrap() == self.curr_completions.len() - 1 {
+                    self.active_completion = None;
+                } else {
+                    self.active_completion = Some(self.active_completion.unwrap() + 1);
                 }
             }
             (VKC::Back, _) => {
