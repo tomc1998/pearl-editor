@@ -36,7 +36,14 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
             );
         }
         Some(Command::Create(CreateCommand(CreateObject::Package))) => {
-            println!("Creating package");
+            let state_clone = state.clone();
+            state::State::prompt(state.clone(),
+                vec!["Package Name".to_owned()],
+                Box::new(move |data| {
+                    let pkg_name = &data[0];
+                    state_clone.project.add_package(&pkg_name);
+                }),
+            );
         }
         None => (),
     }
