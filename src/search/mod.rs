@@ -47,7 +47,7 @@ impl SearchBuffer {
     }
 
     /// Given a string, return a list of string slices of which the input is a subsequence of.
-    pub fn find_all_subsequences(&mut self, search: &str) -> Vec<&str> {
+    pub fn find_all_subsequences(&self, search: &str) -> Vec<&str> {
         let mut results = Vec::new();
         // Hold a reference into the search string, advance each time a char is a match
         let mut curr_search_iter = search.chars();
@@ -65,7 +65,9 @@ impl SearchBuffer {
                 continue;
             }
             // Not a null char, so check if we can advance curr_search_ix
-            if c == curr_search_iter.as_str().chars().next().unwrap() {
+            if curr_search_iter.as_str().len() > 0 &&
+                c == curr_search_iter.as_str().chars().next().unwrap()
+            {
                 curr_search_iter.next().unwrap();
             }
         }

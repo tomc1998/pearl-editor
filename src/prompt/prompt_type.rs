@@ -1,8 +1,6 @@
 use super::Prompt;
 use state::State;
 use std::sync::Arc;
-use java_model::*;
-use std::ptr::null;
 
 /// A section of a PromptInput. Wraps a prompt, and adds useful info regarding autocompletions -
 /// for example, a Package(Prompt) will be subject to package autocompletion.
@@ -28,38 +26,15 @@ impl PromptType {
         match *self {
             PromptType::String(_) => Vec::new(),
             PromptType::Package(_) => {
-                let package_list = &*state.project.package_list.lock().unwrap();
-                let splits = input.split(".");
-                let mut traversed = String::new();
-                let mut curr_pkg: *const Package = null();
-                'outer: for s in splits {
-                    let pkg_list = if curr_pkg == null() {
-                        package_list
-                    } else {
-                        unsafe { &(*curr_pkg).package_list }
-                    };
-
-                    for p in pkg_list {
-                        if p.name == s {
-                            curr_pkg = p;
-                            unsafe {
-                                traversed = traversed + &(*curr_pkg).name + ".";
-                            }
-                            continue 'outer;
-                        }
-                    }
-
-                    // If we're here, then the package wasn't found. Now we can generate
-                    // completions.
-                    let mut completions = Vec::new();
-                    for p in pkg_list {
-                        if p.name.starts_with(s) {
-                            completions.push(traversed.clone() + &p.name);
-                        }
-                    }
-                    return completions;
-                }
-                return vec![]; // We must have completed the package name completely - return no completions.
+                state
+                    .project
+                    .pkg_completion_list
+                    .lock()
+                    .unwrap()
+                    .find_all_subsequences(input)
+                    .into_iter()
+                    .map(|s| s.to_owned())
+                    .collect()
             }
         }
     }

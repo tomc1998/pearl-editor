@@ -8,9 +8,13 @@ use prompt;
 use std::sync::{Arc, Mutex};
 use qgfx;
 use input;
+use search::SearchBuffer;
 
 pub struct Project {
     pub package_list: Mutex<Vec<Package>>,
+
+    /// A searchable list of strings for autocompleting packages
+    pub pkg_completion_list: Mutex<SearchBuffer>,
 
     /// A reference to the current package. This will be highlighted when rendering, and allows for
     /// faster editing due to context-aware commands (i.e. create class will already have package
@@ -29,6 +33,19 @@ impl Project {
         Project {
             package_list: Mutex::new(Vec::new()),
             curr_pkg: Mutex::new(None),
+            pkg_completion_list: Mutex::new(SearchBuffer::new()),
+        }
+    }
+
+    /// Regenerate the package completion list.
+    pub fn regen_pkg_completion_list(&self) {
+        let pkg_completion_list = &mut *self.pkg_completion_list.lock().unwrap();
+        pkg_completion_list.clear();
+        let package_list = self.package_list.lock().unwrap();
+        for p in package_list.iter() {
+            pkg_completion_list.add_strings_owned(
+                &p.gen_package_completion_list()[..],
+            );
         }
     }
 
@@ -113,7 +130,9 @@ impl State {
                     if this.curr_prompt.lock().unwrap().is_some() {
                         let mut curr_prompt = this.curr_prompt.lock().unwrap();
                         curr_prompt.as_mut().unwrap().key_input(i);
-                        curr_prompt.as_mut().unwrap().update_completions(this.clone());
+                        curr_prompt.as_mut().unwrap().update_completions(
+                            this.clone(),
+                        );
                     } else {
                         // Otherwise, send data to the command buffer
                         // Special case, clear the command buffer on C-g
@@ -128,7 +147,9 @@ impl State {
                     if curr_prompt.as_mut().unwrap().char_input(c) {
                         *this.curr_prompt.lock().unwrap() = None;
                     } else {
-                        curr_prompt.as_mut().unwrap().update_completions(this.clone());
+                        curr_prompt.as_mut().unwrap().update_completions(
+                            this.clone(),
+                        );
                     }
                 }
             }

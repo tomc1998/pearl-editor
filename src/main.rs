@@ -10,6 +10,7 @@ mod view;
 mod java_model;
 mod state;
 mod input;
+mod search;
 
 use std::collections::HashSet;
 use java_model::*;
@@ -95,6 +96,7 @@ fn main() {
             declarations.push(Declaration::Class(class));
         }
         let p = state.project.add_package(&format!("com.tom.package{}", jj));
+        state.project.regen_pkg_completion_list();
         unsafe {
             (*p).decl_list = declarations;
         }

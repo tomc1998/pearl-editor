@@ -10,7 +10,7 @@ impl Package {
     /// Creates a package from a name. Will split on the '.' char into subpackages.
     /// This returns the root package, and also a mut pointer to the deepest package created. This
     /// is just for convenience.
-    /// 
+    ///
     /// # Returns
     /// Returns the root package, and optionally a mut pointer to the deepest package created. If
     /// this is none, only 1 package was created. Since we pass the root package back on the stack,
@@ -44,8 +44,7 @@ impl Package {
 
         if curr_pkg == &mut root {
             return (root, None);
-        }
-        else {
+        } else {
             return (root, Some(curr_pkg));
         }
     }
@@ -86,5 +85,28 @@ impl Package {
         unsafe {
             return &mut *curr_pkg;
         }
+    }
+
+    /// Generate a list of fully qualified package names - e.g. for the package com.tom.example,
+    /// this will produce 3 items - 'com', 'com.tom', 'com.tom.example'.
+    pub fn gen_package_completion_list(&self) -> Vec<String> {
+        use smallvec::SmallVec;
+        // stack of packages to visit for a full traversal
+        let mut names = Vec::new();
+        // Pairs of package pointers and name prefixes
+        let mut pkg_stack: SmallVec<[(String, *const Package); 16]> = SmallVec::new();
+        pkg_stack.push(("".to_owned(), self));
+
+        while pkg_stack.len() > 0 {
+            unsafe {
+                let (prefix, p) = pkg_stack.pop().unwrap();
+                let p = &*p;
+                names.push(prefix.clone() + &p.name);
+                for child in &p.package_list {
+                    pkg_stack.push((prefix.clone() + &p.name + ".", child));
+                }
+            }
+        }
+        return names;
     }
 }
