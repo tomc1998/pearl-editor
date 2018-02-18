@@ -24,11 +24,13 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
     match state.command_buffer.lock().unwrap().poll_cmd() {
         Some(Command::Create(CreateCommand(CreateObject::Class))) => {
             let state_clone = state.clone();
+            // If curr package is some, then fill that in
+            let curr_pkg = state.project.curr_pkg.lock().unwrap().clone();
             state::State::prompt(
                 state.clone(),
                 vec![
-                    PT::Package(P("Package Name".to_owned(), true)),
-                    PT::String(P("Class Name".to_owned(), false)),
+                    PT::Package(P::new_exact("Package Name", true, curr_pkg)),
+                    PT::String(P::new("Class Name")),
                 ],
                 Box::new(move |data| {
                     let mut class = Class::new_empty();
@@ -45,7 +47,7 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
             let state_clone = state.clone();
             state::State::prompt(
                 state.clone(),
-                vec![PT::Package(P("Package Name".to_owned(), false))],
+                vec![PT::Package(P::new("Package Name"))],
                 Box::new(move |data| {
                     let pkg_name = &data[0];
                     state_clone.project.add_package(&pkg_name);
@@ -56,7 +58,7 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
             let state_clone = state.clone();
             state::State::prompt(
                 state.clone(),
-                vec![PT::Package(P("Package Name".to_owned(), true))],
+                vec![PT::Package(P::new_empty_allowed("Package Name"))],
                 Box::new(move |data| {
                     let pkg_name = &data[0];
                     // If default package, just set to none

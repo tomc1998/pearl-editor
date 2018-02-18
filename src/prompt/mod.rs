@@ -11,7 +11,26 @@ pub use self::prompt_type::PromptType;
 /// A prompt. The first string is the text of the prompt - what is displayed to the user - and the
 /// boolean indicates whether or not to accept empty input. True for empty allowed - false if empty
 /// should be rejected.
-pub struct Prompt(pub String, pub bool);
+pub struct Prompt(pub String, pub bool, pub Option<String>);
+
+impl Prompt {
+    /// Prompt with no default value, and empty not allowed
+    pub fn new(val: &str) -> Prompt {
+        Prompt(val.to_owned(), false, None)
+    }
+    /// New ewith empty allowed
+    pub fn new_empty_allowed(val: &str) -> Prompt {
+        Prompt(val.to_owned(), true, None)
+    }
+    /// Specify a default value
+    #[allow(dead_code)]
+    pub fn new_with_default(val: &str, default: &str) -> Prompt {
+        Prompt(val.to_owned(), false, Some(default.to_owned()))
+    }
+    pub fn new_exact(val: &str, empty: bool, default: Option<String>) -> Prompt {
+        Prompt(val.to_owned(), empty, default)
+    }
+}
 
 /// Generic text prompt. Contains a list of prompts, which are used to separate the prompt into
 /// sections - i.e. the promptinput may need to prompt for a package and a class name.
@@ -41,11 +60,27 @@ impl PromptInput {
         if prompts.len() == 0 {
             panic!("Creating a prompt of length 0")
         }
+        // Go through prompts & initialise inputs & starting pos
+        let mut inputs = Vec::new();
+        let mut curr_prompt = 0;
+        for p in &prompts {
+            let default = p.get_default();
+            if default.is_some() {
+                inputs.push(default.clone().unwrap());
+            } else {
+                inputs.push("".to_owned());
+            }
+        }
+        for p in &prompts {
+            if p.get_default().is_none() { break; }
+            curr_prompt += 1;
+        }
+        
         PromptInput {
-            inputs: vec!["".to_owned(); prompts.len()],
+            inputs: inputs,
             prompts: prompts,
             callback: callback,
-            curr_prompt: 0,
+            curr_prompt: curr_prompt,
             curr_completions: Vec::new(),
             active_completion: None,
         }

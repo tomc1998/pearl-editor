@@ -20,6 +20,13 @@ impl PromptType {
         }
     }
 
+    pub fn get_default(&self) -> &Option<String> {
+        match *self {
+            PromptType::String(ref p) => &p.2,
+            PromptType::Package(ref p) => &p.2,
+        }
+    }
+
     /// Suggest completionsof a given string based on the type of this type and the current
     /// program state. Returns vec of len 0 if no completion available.
     pub fn complete(&self, state: Arc<State>, input: &str) -> Vec<String> {
@@ -38,4 +45,5 @@ impl PromptType {
             }
         }
     }
+
 }
