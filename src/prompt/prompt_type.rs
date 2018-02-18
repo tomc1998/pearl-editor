@@ -30,6 +30,7 @@ impl PromptType {
             PromptType::Package(_) => {
                 let package_list = &*state.project.package_list.lock().unwrap();
                 let splits = input.split(".");
+                let mut traversed = String::new();
                 let mut curr_pkg: *const Package = null();
                 'outer: for s in splits {
                     let pkg_list = if curr_pkg == null() {
@@ -41,6 +42,9 @@ impl PromptType {
                     for p in pkg_list {
                         if p.name == s {
                             curr_pkg = p;
+                            unsafe {
+                                traversed = traversed + &(*curr_pkg).name + ".";
+                            }
                             continue 'outer;
                         }
                     }
@@ -50,7 +54,7 @@ impl PromptType {
                     let mut completions = Vec::new();
                     for p in pkg_list {
                         if p.name.starts_with(s) {
-                            completions.push(p.name.clone());
+                            completions.push(traversed.clone() + &p.name);
                         }
                     }
                     return completions;
