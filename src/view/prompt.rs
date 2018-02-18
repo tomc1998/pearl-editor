@@ -55,12 +55,25 @@ impl PromptInputView {
             pos.x += w + 16.0;
         }
 
-        g.text(
-            prompt.get_curr_input(),
-            &[8.0 + pos.x, display_size.y - 8.0],
-            self.font,
-            &[1.0, 1.0, 1.0, 1.0],
-        );
+        // Render the input, or the completion if active
+        match prompt.get_active_completion() {
+            Some(ix) => {
+                g.text(
+                    &prompt.get_completions()[ix],
+                    &[8.0 + pos.x, display_size.y - 8.0],
+                    self.font,
+                    &[1.0, 1.0, 1.0, 1.0],
+                );
+            }
+            _ => {
+                g.text(
+                    prompt.get_curr_input(),
+                    &[8.0 + pos.x, display_size.y - 8.0],
+                    self.font,
+                    &[1.0, 1.0, 1.0, 1.0],
+                );
+            }
+        }
 
         const ACTIVE_COMPLETION_COL: [f32; 4] = [0.4, 0.4, 0.7, 1.0];
 
