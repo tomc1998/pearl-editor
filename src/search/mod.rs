@@ -14,6 +14,7 @@ impl SearchBuffer {
     }
 
     /// Add a list of strings
+    #[allow(dead_code)]
     pub fn add_strings(&mut self, strings: &[&str]) {
         let mut len = 0;
         for s in strings {

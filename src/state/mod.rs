@@ -145,7 +145,7 @@ impl State {
                 if this.curr_prompt.lock().unwrap().is_some() {
                     let mut curr_prompt = this.curr_prompt.lock().unwrap();
                     if curr_prompt.as_mut().unwrap().char_input(c) {
-                        *this.curr_prompt.lock().unwrap() = None;
+                        *curr_prompt = None;
                     } else {
                         curr_prompt.as_mut().unwrap().update_completions(
                             this.clone(),

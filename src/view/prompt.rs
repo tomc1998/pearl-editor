@@ -78,7 +78,6 @@ impl PromptInputView {
         const ACTIVE_COMPLETION_COL: [f32; 4] = [0.4, 0.4, 0.7, 1.0];
 
         // Render completions
-        let num_comp = prompt.get_completions().len();
         for (ii, c) in prompt.get_completions().iter().enumerate() {
             // Select colour
             let col = match prompt.get_active_completion() {
