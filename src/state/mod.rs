@@ -61,18 +61,31 @@ impl Project {
     /// valid forever, and is only a convenience measure to quickly add a class to the deepest
     /// package.
     pub fn add_package(&self, name: &str) -> *mut Package {
-        let first_pkg_name = &name[0..name.find(".").unwrap_or(name.len())];
-        let mut package_list = self.package_list.lock().unwrap();
-        for p in &mut *package_list {
-            if p.name == first_pkg_name {
-                return p.add_subpackage(name);
+        let mut deepest : Option<*mut Package> = None;
+        {
+            let first_pkg_name = &name[0..name.find(".").unwrap_or(name.len())];
+            let mut package_list = self.package_list.lock().unwrap();
+            let mut found_subpkg = false;
+            for p in &mut package_list.iter_mut() {
+                if p.name == first_pkg_name {
+                    deepest = Some(p.add_subpackage(name));
+                    found_subpkg = true;
+                    break;
+                }
             }
+            if found_subpkg {
+                drop(package_list); // Drop otherwise we deadlock with regen_pkg_completion_list
+                self.regen_pkg_completion_list();
+                return deepest.unwrap();
+            }
+            let (pkg, mut deepest_opt) = Package::new(name);            
+            package_list.push(pkg);
+            if deepest_opt.is_none() {
+                deepest_opt = Some(package_list.last_mut().unwrap() as *mut Package);
+            }
+            deepest = deepest_opt;
         }
-        let (pkg, mut deepest) = Package::new(name);
-        package_list.push(pkg);
-        if deepest.is_none() {
-            deepest = Some(package_list.last_mut().unwrap() as *mut Package);
-        }
+        self.regen_pkg_completion_list();
         return deepest.unwrap();
     }
 }
