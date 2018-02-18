@@ -8,3 +8,6 @@ quick-gfx = { git = "https://github.com/tomc1998/rs-quick-gfx" }
 cgmath = "0.15.0"
 winit = "0.7.5"
 smallvec = "0.6.0"
+
+[profile.dev]
+debug = true

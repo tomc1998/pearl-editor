@@ -108,13 +108,14 @@ fn main() {
     while !closed {
         {
             let (display_w, display_h) = g.get_display_size();
-            let controller = g.get_renderer_controller();
-            package_view.render(&controller, cgmath::Vector2::new(0.0, 0.0));
+            let mut controller = g.get_renderer_controller();
+            package_view.render(&mut controller, cgmath::Vector2::new(0.0, 0.0));
             command_buffer_view.render(
-                &controller,
+                &mut controller,
                 cgmath::Vector2::new(display_w as f32, display_h as f32),
             );
-            prompt_input_view.render(&controller, cgmath::Vector2::new(display_w as f32, display_h as f32));
+            prompt_input_view.render(&mut controller, cgmath::Vector2::new(display_w as f32, display_h as f32));
+            controller.flush();
         }
 
         g.recv_data();

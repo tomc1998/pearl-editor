@@ -22,7 +22,7 @@ impl PromptInputView {
     /// # Params
     /// * `display_size` - The size of the current display, so that the command buffer can be
     /// rendered at the bottom of the screen.
-    pub fn render(&self, g: &RendererController, display_size: cgmath::Vector2<f32>) {
+    pub fn render(&self, g: &mut RendererController, display_size: cgmath::Vector2<f32>) {
         let prompt = self.state.curr_prompt.lock().unwrap();
         if prompt.is_none() {
             return;

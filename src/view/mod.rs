@@ -31,7 +31,7 @@ impl PackageListView {
     /// classes rendered.
     fn render_decl_list(
         &self,
-        g: &RendererController,
+        g: &mut RendererController,
         decl_list: &[Declaration],
         offset: cgmath::Vector2<f32>,
         decl_height: f32,
@@ -61,7 +61,7 @@ impl PackageListView {
     }
 
     /// Function to render a package recursively. Returns a rect which contains the space used up.
-    fn render_pkg(&self, g: &RendererController, pos: cgmath::Vector2<f32>, pkg: &Package) -> Rect {
+    fn render_pkg(&self, g: &mut RendererController, pos: cgmath::Vector2<f32>, pkg: &Package) -> Rect {
         // render this package
         g.rect(&[pos.x, pos.y, 128.0 - 16.0, 32.0], &[0.1, 0.1, 0.1, 1.0]);
         g.text(
@@ -86,7 +86,7 @@ impl PackageListView {
 
     /// Renders a list of packages.
     /// Returns the bounding box used up from rendering.
-    pub fn render(&self, g: &RendererController, offset: cgmath::Vector2<f32>) {
+    pub fn render(&self, g: &mut RendererController, offset: cgmath::Vector2<f32>) {
         let mut pos = offset;
         let package_list = &*self.state.project.package_list.lock().unwrap();
         for p in package_list {
