@@ -55,7 +55,7 @@ impl PromptType {
                     }
                     return completions;
                 }
-                return vec![input.to_owned()]; // We must have completed the package name completely - return the input.
+                return vec![]; // We must have completed the package name completely - return no completions.
             }
         }
     }

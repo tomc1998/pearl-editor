@@ -80,7 +80,9 @@ impl PromptInput {
             (VKC::Tab, 0b0000) => {
                 // Select completion
                 if self.active_completion.is_none() {
-                    self.active_completion = Some(0);
+                    if self.curr_completions.len() > 0 {
+                        self.active_completion = Some(0);
+                    }
                 } else if self.active_completion.unwrap() == self.curr_completions.len() - 1 {
                     self.active_completion = None;
                 } else {
@@ -111,6 +113,13 @@ impl PromptInput {
             }
             c => {
                 if !c.is_control() {
+                    // If we have a completion selected, then we select that before inserting the
+                    // next char
+                    if self.active_completion.is_some() {
+                        self.inputs[self.curr_prompt] =
+                            self.curr_completions[self.active_completion.unwrap()].clone();
+                        self.active_completion = None;
+                    }
                     self.inputs[self.curr_prompt].push(c);
                 }
             }
