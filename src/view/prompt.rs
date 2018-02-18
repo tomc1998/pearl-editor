@@ -79,7 +79,6 @@ impl PromptInputView {
 
         // Render completions
         let num_comp = prompt.get_completions().len();
-        pos.y += 24.0 * num_comp as f32 + 24.0;
         for (ii, c) in prompt.get_completions().iter().enumerate() {
             // Select colour
             let col = match prompt.get_active_completion() {
@@ -94,7 +93,7 @@ impl PromptInputView {
             };
 
             // Inc cursor
-            pos.y -= 24.0;
+            pos.y += 24.0;
 
             // Render completion
             g.rect(

@@ -65,10 +65,10 @@ impl PromptInput {
             (VKC::Tab, 0b1000) => {
                 if self.active_completion.is_some() {
                     // Decrement completion
-                    if self.active_completion.unwrap() == 0 {
+                    if self.active_completion.unwrap() >= self.curr_completions.len() - 1 {
                         self.active_completion = None
                     } else {
-                        self.active_completion = Some(self.active_completion.unwrap() - 1);
+                        self.active_completion = Some(self.active_completion.unwrap() + 1);
                     }
                 } else {
                     // Return to prev prompt
@@ -81,12 +81,12 @@ impl PromptInput {
                 // Select completion
                 if self.active_completion.is_none() {
                     if self.curr_completions.len() > 0 {
-                        self.active_completion = Some(0);
+                        self.active_completion = Some(self.curr_completions.len()-1);
                     }
-                } else if self.active_completion.unwrap() == self.curr_completions.len() - 1 {
+                } else if self.active_completion.unwrap() <= 0 {
                     self.active_completion = None;
                 } else {
-                    self.active_completion = Some(self.active_completion.unwrap() + 1);
+                    self.active_completion = Some(self.active_completion.unwrap() - 1);
                 }
             }
             (VKC::Back, _) => {
