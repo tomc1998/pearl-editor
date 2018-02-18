@@ -61,24 +61,48 @@ impl PackageListView {
     }
 
     /// Function to render a package recursively. Returns a rect which contains the space used up.
-    fn render_pkg(&self, g: &mut RendererController, pos: cgmath::Vector2<f32>, pkg: &Package) -> Rect {
-        // render this package
-        g.rect(&[pos.x, pos.y, 128.0 - 16.0, 32.0], &[0.1, 0.1, 0.1, 1.0]);
+    ///
+    /// # Params
+    /// * `prefix` - The prefix to this package, i.e. all the parents. e.g - "com.tom."
+    /// * `selected_pkg_name` - The qualified name of the currently selected pkg - highlight this
+    ///                         if this package name matches.
+    fn render_pkg(
+        &self,
+        g: &mut RendererController,
+        pos: cgmath::Vector2<f32>,
+        pkg: &Package,
+        prefix: &mut String,
+        selected_pkg_name: &Option<String>,
+    ) -> Rect {
+        let orig_prefix_len = prefix.len();
+        prefix.push_str(pkg.name.as_ref());
+        let col = if selected_pkg_name.is_none() || selected_pkg_name.as_ref().unwrap() != prefix.as_str() {
+            [0.1, 0.1, 0.1, 1.0]
+        } else {
+            [0.2, 0.5, 0.2, 1.0]
+        };
+        // render this package - choose a highlighted colour if this prefix is the selected one
+        g.rect(&[pos.x, pos.y, 128.0 - 16.0, 32.0], &col);
         g.text(
-            pkg.name.as_ref(),
+            prefix,
             &[pos.x, pos.y + 32.0 / 2.0],
             self.font,
             &[1.0, 1.0, 1.0, 1.0],
         );
 
+
+        // Add '.' to our pkg name so we can use it as a prefix
+        prefix.push_str(".");
         let mut indented = cgmath::Vector2 {
             x: pos.x + 16.0,
             y: pos.y + 32.0,
         };
         for p in &pkg.package_list {
-            let rect = self.render_pkg(g, indented, p);
+            let rect = self.render_pkg(g, indented, p, prefix, selected_pkg_name);
             indented.y += rect.size.y;
         }
+
+        prefix.truncate(orig_prefix_len);
 
         let rect = self.render_decl_list(g, &pkg.decl_list[..], indented, 32.0, 128.0 - 16.0);
         return Rect::new(pos.x, pos.y, 128.0, indented.y - pos.y + rect.size.y);
@@ -89,8 +113,10 @@ impl PackageListView {
     pub fn render(&self, g: &mut RendererController, offset: cgmath::Vector2<f32>) {
         let mut pos = offset;
         let package_list = &*self.state.project.package_list.lock().unwrap();
+        let selected_pkg_name = &*self.state.project.curr_pkg.lock().unwrap();
+        println!("{:?}", selected_pkg_name);
         for p in package_list {
-            let rect = self.render_pkg(g, pos, p);
+            let rect = self.render_pkg(g, pos, p, &mut "".to_owned(), selected_pkg_name);
             pos.y += rect.size.y;
         }
     }

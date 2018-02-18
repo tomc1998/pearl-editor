@@ -59,7 +59,13 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                 vec![PT::Package(P("Package Name".to_owned(), true))],
                 Box::new(move |data| {
                     let pkg_name = &data[0];
-                    state_clone.project.add_package(&pkg_name);
+                    // If default package, just set to none
+                    if state_clone.project.package_exists(pkg_name) && pkg_name.len() > 0 {
+                        *state_clone.project.curr_pkg.lock().unwrap() = Some(pkg_name.clone());
+                    }
+                    else {
+                        *state_clone.project.curr_pkg.lock().unwrap() = None;
+                    }
                 }),
             );
         }
