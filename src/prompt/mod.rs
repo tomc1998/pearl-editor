@@ -105,6 +105,11 @@ impl PromptInput {
     pub fn char_input(&mut self, c: char) -> bool {
         match c {
             '\r' | '\n' => {
+                if self.active_completion.is_some() {
+                    self.inputs[self.curr_prompt] =
+                        self.curr_completions[self.active_completion.unwrap()].clone();
+                    self.active_completion = None;
+                }
                 self.curr_prompt += 1;
                 if self.curr_prompt >= self.prompts.len() {
                     (self.callback)(&self.inputs[..]);
