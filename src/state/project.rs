@@ -2,23 +2,42 @@ use java_model::*;
 use std::sync::Mutex;
 use search::SearchBuffer;
 
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Selection {
+    /// Selection of a package. Contains the qualified package name.
+    Package(String),
+    /// Selection of a class. Contains the qualified class name.
+    Class(String),
+}
+
+impl Selection {
+    /// Checks if this selection is a package, then checks if the package name matches the given
+    /// input p.
+    pub fn is_package(&self, p: &str) -> bool {
+        match *self {
+            Selection::Package(ref _p) => p == _p,
+            _ => false,
+        }
+    }
+}
+
 pub struct Project {
     pub package_list: Mutex<Vec<Package>>,
 
     /// A searchable list of strings for autocompleting packages
     pub pkg_completion_list: Mutex<SearchBuffer>,
 
-    /// A reference to the current package. This will be highlighted when rendering, and allows for
-    /// faster editing due to context-aware commands (i.e. create class will already have package
-    /// filled in)
-    pub curr_pkg: Mutex<Option<String>>,
+    /// A reference to the current selcetion. This will be highlighted when rendering, and allows
+    /// for faster editing due to context-aware commands (i.e. create class will already have
+    /// package filled in when that package is selected)
+    pub curr_sel: Mutex<Option<Selection>>,
 }
 
 impl Project {
     pub fn new() -> Project {
         Project {
             package_list: Mutex::new(Vec::new()),
-            curr_pkg: Mutex::new(None),
+            curr_sel: Mutex::new(None),
             pkg_completion_list: Mutex::new(SearchBuffer::new()),
         }
     }
@@ -29,9 +48,7 @@ impl Project {
         pkg_completion_list.clear();
         let package_list = self.package_list.lock().unwrap();
         for p in package_list.iter() {
-            pkg_completion_list.add_strings_owned(
-                &p.gen_package_completion_list()[..],
-            );
+            pkg_completion_list.add_strings_owned(&p.gen_package_completion_list()[..]);
         }
     }
 
@@ -47,7 +64,7 @@ impl Project {
         let mut splits = name.split(".");
         let first_pkg_name = splits.next().unwrap();
         let package_list = self.package_list.lock().unwrap();
-        let mut pkg_ptr : *const Package = null();
+        let mut pkg_ptr: *const Package = null();
         for p in package_list.iter() {
             if p.name == first_pkg_name {
                 pkg_ptr = p;
@@ -88,7 +105,7 @@ impl Project {
     /// valid forever, and is only a convenience measure to quickly add a class to the deepest
     /// package.
     pub fn add_package(&self, name: &str) -> *mut Package {
-        let mut deepest : Option<*mut Package> = None;
+        let mut deepest: Option<*mut Package> = None;
         {
             let first_pkg_name = &name[0..name.find(".").unwrap_or(name.len())];
             let mut package_list = self.package_list.lock().unwrap();
@@ -105,7 +122,7 @@ impl Project {
                 self.regen_pkg_completion_list();
                 return deepest.unwrap();
             }
-            let (pkg, mut deepest_opt) = Package::new(name);            
+            let (pkg, mut deepest_opt) = Package::new(name);
             package_list.push(pkg);
             if deepest_opt.is_none() {
                 deepest_opt = Some(package_list.last_mut().unwrap() as *mut Package);

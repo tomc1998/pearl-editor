@@ -64,19 +64,18 @@ impl PackageListView {
     ///
     /// # Params
     /// * `prefix` - The prefix to this package, i.e. all the parents. e.g - "com.tom."
-    /// * `selected_pkg_name` - The qualified name of the currently selected pkg - highlight this
-    ///                         if this package name matches.
+    /// * `sel` - The current selection. Will tell us whether or not to highlight.
     fn render_pkg(
         &self,
         g: &mut RendererController,
         pos: cgmath::Vector2<f32>,
         pkg: &Package,
         prefix: &mut String,
-        selected_pkg_name: &Option<String>,
+        sel: &Option<state::Selection>,
     ) -> Rect {
         let orig_prefix_len = prefix.len();
         prefix.push_str(pkg.name.as_ref());
-        let col = if selected_pkg_name.is_none() || selected_pkg_name.as_ref().unwrap() != prefix.as_str() {
+        let col = if sel.is_none() || !sel.as_ref().unwrap().is_package(prefix.as_str()) {
             [0.1, 0.1, 0.1, 1.0]
         } else {
             [0.2, 0.5, 0.2, 1.0]
@@ -98,7 +97,7 @@ impl PackageListView {
             y: pos.y + 32.0,
         };
         for p in &pkg.package_list {
-            let rect = self.render_pkg(g, indented, p, prefix, selected_pkg_name);
+            let rect = self.render_pkg(g, indented, p, prefix, sel);
             indented.y += rect.size.y;
         }
 
@@ -113,8 +112,7 @@ impl PackageListView {
     pub fn render(&self, g: &mut RendererController, offset: cgmath::Vector2<f32>) {
         let mut pos = offset;
         let package_list = &*self.state.project.package_list.lock().unwrap();
-        let selected_pkg_name = &*self.state.project.curr_pkg.lock().unwrap();
-        println!("{:?}", selected_pkg_name);
+        let selected_pkg_name = &*self.state.project.curr_sel.lock().unwrap();
         for p in package_list {
             let rect = self.render_pkg(g, pos, p, &mut "".to_owned(), selected_pkg_name);
             pos.y += rect.size.y;

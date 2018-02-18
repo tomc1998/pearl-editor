@@ -21,15 +21,19 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
     // Poll command buffer & execute command
     use command::*;
     use prompt::{PromptType as PT, Prompt as P};
+    use state::Selection;
     match state.command_buffer.lock().unwrap().poll_cmd() {
         Some(Command::Create(CreateCommand(CreateObject::Class))) => {
             let state_clone = state.clone();
             // If curr package is some, then fill that in
-            let curr_pkg = state.project.curr_pkg.lock().unwrap().clone();
+            let curr_sel = match *state.project.curr_sel.lock().unwrap() {
+                Some(Selection::Package(ref val)) => Some(val.clone()),
+                _ => None,
+            };
             state::State::prompt(
                 state.clone(),
                 vec![
-                    PT::Package(P::new_exact("Package Name", true, curr_pkg)),
+                    PT::Package(P::new_exact("Package Name", true, curr_sel)),
                     PT::String(P::new("Class Name")),
                 ],
                 Box::new(move |data| {
@@ -63,10 +67,10 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                     let pkg_name = &data[0];
                     // If default package, just set to none
                     if state_clone.project.package_exists(pkg_name) && pkg_name.len() > 0 {
-                        *state_clone.project.curr_pkg.lock().unwrap() = Some(pkg_name.clone());
-                    }
-                    else {
-                        *state_clone.project.curr_pkg.lock().unwrap() = None;
+                        *state_clone.project.curr_sel.lock().unwrap() =
+                            Some(Selection::Package(pkg_name.clone()));
+                    } else {
+                        *state_clone.project.curr_sel.lock().unwrap() = None;
                     }
                 }),
             );
@@ -123,7 +127,10 @@ fn main() {
                 &mut controller,
                 cgmath::Vector2::new(display_w as f32, display_h as f32),
             );
-            prompt_input_view.render(&mut controller, cgmath::Vector2::new(display_w as f32, display_h as f32));
+            prompt_input_view.render(
+                &mut controller,
+                cgmath::Vector2::new(display_w as f32, display_h as f32),
+            );
             controller.flush();
         }
 

@@ -45,5 +45,4 @@ impl PromptType {
             }
         }
     }
-
 }

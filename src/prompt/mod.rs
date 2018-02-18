@@ -72,10 +72,12 @@ impl PromptInput {
             }
         }
         for p in &prompts {
-            if p.get_default().is_none() { break; }
+            if p.get_default().is_none() {
+                break;
+            }
             curr_prompt += 1;
         }
-        
+
         PromptInput {
             inputs: inputs,
             prompts: prompts,
@@ -116,7 +118,7 @@ impl PromptInput {
                 // Select completion
                 if self.active_completion.is_none() {
                     if self.curr_completions.len() > 0 {
-                        self.active_completion = Some(self.curr_completions.len()-1);
+                        self.active_completion = Some(self.curr_completions.len() - 1);
                     }
                 } else if self.active_completion.unwrap() <= 0 {
                     self.active_completion = None;
