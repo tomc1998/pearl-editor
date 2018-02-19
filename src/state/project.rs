@@ -19,6 +19,15 @@ impl Selection {
             _ => false,
         }
     }
+
+    /// Checks if this selection is a decl, then checks if the package name matches the given
+    /// input p.
+    pub fn is_decl(&self, p: &str) -> bool {
+        match *self {
+            Selection::Decl(ref _p) => p == _p,
+            _ => false,
+        }
+    }
 }
 
 pub struct Project {
@@ -70,6 +79,7 @@ impl Project {
 
     /// Given a full qualified package name, returns true if that package exists.
     /// If name len is 0, this returns true (default package always exists
+    #[allow(dead_code)]
     pub fn package_exists(&self, name: &str) -> bool {
         use std::ptr::null;
 

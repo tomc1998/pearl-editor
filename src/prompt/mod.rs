@@ -39,11 +39,11 @@ pub struct PromptInput {
     pub prompts: Vec<PromptType>,
 
     /// The user's input
-    pub inputs: Vec<String>,
+    pub inputs: Vec<PromptResult>,
 
     /// Called when the user finishes the prompt. Takes a slice of user inputs, the same length as
     /// the length of prompts.
-    callback: Box<FnMut(&[String])>,
+    callback: Box<FnMut(&[PromptResult])>,
 
     /// The index of the current prompt
     curr_prompt: usize,
@@ -55,8 +55,26 @@ pub struct PromptInput {
     active_completion: Option<usize>,
 }
 
+/// The result of a prompt
+#[derive(Clone, Debug, PartialEq, Eq, Hash)]
+pub struct PromptResult {
+    pub val: String,
+    /// Only applies to prompts which can be completed. If false, the user entered a custom value
+    /// which did not have a completion.
+    pub completion_match: bool,
+}
+
+impl PromptResult {
+    pub fn new(val: String) -> PromptResult {
+        PromptResult {
+            val: val,
+            completion_match: false,
+        }
+    }
+}
+
 impl PromptInput {
-    pub fn new(prompts: Vec<PromptType>, callback: Box<FnMut(&[String])>) -> PromptInput {
+    pub fn new(prompts: Vec<PromptType>, callback: Box<FnMut(&[PromptResult])>) -> PromptInput {
         if prompts.len() == 0 {
             panic!("Creating a prompt of length 0")
         }
@@ -66,9 +84,9 @@ impl PromptInput {
         for p in &prompts {
             let default = p.get_default();
             if default.is_some() {
-                inputs.push(default.clone().unwrap());
+                inputs.push(PromptResult::new(default.clone().unwrap()));
             } else {
-                inputs.push("".to_owned());
+                inputs.push(PromptResult::new("".to_owned()));
             }
         }
         for p in &prompts {
@@ -127,8 +145,8 @@ impl PromptInput {
                 }
             }
             (VKC::Back, _) => {
-                if self.inputs[self.curr_prompt].len() > 0 {
-                    self.inputs[self.curr_prompt].pop();
+                if self.inputs[self.curr_prompt].val.len() > 0 {
+                    self.inputs[self.curr_prompt].val.pop();
                 }
             }
             _ => (),
@@ -143,12 +161,23 @@ impl PromptInput {
         match c {
             '\r' | '\n' => {
                 if self.active_completion.is_some() {
-                    self.inputs[self.curr_prompt] =
+                    self.inputs[self.curr_prompt].val =
                         self.curr_completions[self.active_completion.unwrap()].clone();
                     self.active_completion = None;
                 }
                 self.curr_prompt += 1;
                 if self.curr_prompt >= self.prompts.len() {
+                    // Loop through inputs, set the completion flag
+                    for i in &mut self.inputs {
+                        let mut completion_found = false;
+                        for c in &self.curr_completions {
+                            if c == &i.val {
+                                completion_found = true;
+                                break;
+                            }
+                        }
+                        i.completion_match = if completion_found { true } else { false }
+                    }
                     (self.callback)(&self.inputs[..]);
                     return true;
                 }
@@ -158,11 +187,11 @@ impl PromptInput {
                     // If we have a completion selected, then we select that before inserting the
                     // next char
                     if self.active_completion.is_some() {
-                        self.inputs[self.curr_prompt] =
+                        self.inputs[self.curr_prompt].val = 
                             self.curr_completions[self.active_completion.unwrap()].clone();
                         self.active_completion = None;
                     }
-                    self.inputs[self.curr_prompt].push(c);
+                    self.inputs[self.curr_prompt].val.push(c);
                 }
             }
         }
@@ -172,7 +201,7 @@ impl PromptInput {
     /// Update the completions on this prompt
     pub fn update_completions(&mut self, state: Arc<State>) {
         self.curr_completions =
-            self.prompts[self.curr_prompt].complete(state, &self.inputs[self.curr_prompt])
+            self.prompts[self.curr_prompt].complete(state, &self.inputs[self.curr_prompt].val)
     }
 
     /// Get the index of the current prompt we're editing
@@ -182,6 +211,6 @@ impl PromptInput {
 
     /// Get the current user's input
     pub fn get_curr_input(&self) -> &str {
-        &self.inputs[self.curr_prompt]
+        &self.inputs[self.curr_prompt].val
     }
 }

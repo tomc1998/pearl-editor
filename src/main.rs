@@ -38,8 +38,8 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                 ],
                 Box::new(move |data| {
                     let mut class = Class::new_empty();
-                    class.name = data[1].clone();
-                    let pkg_name = &data[0];
+                    class.name = data[1].val.clone();
+                    let pkg_name = &data[0].val;
                     let pkg = state_clone.project.add_package(&pkg_name);
                     unsafe {
                         (*pkg).decl_list.push(Declaration::Class(class));
@@ -54,7 +54,7 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                 state.clone(),
                 vec![PT::Package(P::new("Package Name"))],
                 Box::new(move |data| {
-                    let pkg_name = &data[0];
+                    let pkg_name = &data[0].val;
                     state_clone.project.add_package(&pkg_name);
                 }),
             );
@@ -65,11 +65,11 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                 state.clone(),
                 vec![PT::Package(P::new_empty_allowed("Package Name"))],
                 Box::new(move |data| {
-                    let pkg_name = &data[0];
-                    // If default package, just set to none
-                    if state_clone.project.package_exists(pkg_name) && pkg_name.len() > 0 {
+                    // If didn't find a completion, then just assume this is a bad pkg name
+                    let (name, completion_match) = (&data[0].val, data[0].completion_match);
+                    if completion_match {
                         *state_clone.project.curr_sel.lock().unwrap() =
-                            Some(Selection::Package(pkg_name.clone()));
+                            Some(Selection::Package(name.clone()));
                     } else {
                         *state_clone.project.curr_sel.lock().unwrap() = None;
                     }
@@ -77,11 +77,19 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
             );
         }
         Some(Command::Select(SelectCommand(SelectObject::Class))) => {
+            let state_clone = state.clone();
             state::State::prompt(
                 state.clone(),
-                vec![PT::Decl(P::new_empty_allowed("Class Name"))],
+                vec![PT::Decl(P::new_empty_allowed("Name"))],
                 Box::new(move |data| {
-                    println!("SELECTING CLASS {}", data[0]);
+                    // If didn't find a completion, then just assume this is a bad class name
+                    let (name, completion_match) = (&data[0].val, data[0].completion_match);
+                    if completion_match {
+                        *state_clone.project.curr_sel.lock().unwrap() =
+                            Some(Selection::Decl(name.clone()));
+                    } else {
+                        *state_clone.project.curr_sel.lock().unwrap() = None;
+                    }
                 }),
             );
         }

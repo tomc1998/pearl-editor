@@ -11,6 +11,7 @@ use prompt;
 use std::sync::{Arc, Mutex};
 use qgfx;
 use input;
+use prompt::PromptResult;
 
 pub struct State {
     pub project: Project,
@@ -37,7 +38,7 @@ impl State {
     pub fn prompt(
         this: Arc<State>,
         prompts: Vec<prompt::PromptType>,
-        callback: Box<FnMut(&[String])>,
+        callback: Box<FnMut(&[PromptResult])>,
     ) -> bool {
         let mut prompt = this.curr_prompt.lock().unwrap();
         if prompt.is_some() {

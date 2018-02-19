@@ -29,6 +29,9 @@ impl PackageListView {
 
     /// Helper to render a list of decls. Returns a rect which indicates the size used up by the
     /// classes rendered.
+    /// # Params
+    /// * `prefix` - The prefix to this decl, i.e. all the parents. e.g - "com.tom."
+    /// * `sel` - The current selection. Will tell us whether or not to highlight.
     fn render_decl_list(
         &self,
         g: &mut RendererController,
@@ -36,20 +39,27 @@ impl PackageListView {
         offset: cgmath::Vector2<f32>,
         decl_height: f32,
         decl_width: f32,
+        prefix: &mut String,
+        sel: &Option<state::Selection>,
     ) -> Rect {
         let mut pos = offset;
         for d in decl_list {
-            g.rect(
-                &[pos.x, pos.y, decl_width, decl_height],
-                &[0.1, 0.1, 0.1, 1.0],
-            );
+            let orig_prefix_len = prefix.len();
+            prefix.push_str(d.name().as_ref());
+            let col = if sel.is_none() || !sel.as_ref().unwrap().is_decl(prefix.as_str()) {
+                [0.1, 0.1, 0.1, 1.0]
+            } else {
+                [0.2, 0.5, 0.2, 1.0]
+            };
+            g.rect(&[pos.x, pos.y, decl_width, decl_height], &col);
             g.text(
-                d.name(),
+                prefix.as_str(),
                 &[pos.x, pos.y + decl_height / 2.0],
                 self.font,
                 &[1.0, 1.0, 1.0, 1.0],
             );
             pos.y += decl_height;
+            prefix.truncate(orig_prefix_len);
         }
         return Rect::new(
             offset.x,
@@ -101,9 +111,10 @@ impl PackageListView {
             indented.y += rect.size.y;
         }
 
-        prefix.truncate(orig_prefix_len);
 
-        let rect = self.render_decl_list(g, &pkg.decl_list[..], indented, 32.0, 128.0 - 16.0);
+        let rect = self.render_decl_list(g, &pkg.decl_list[..], indented, 32.0, 128.0 - 16.0, prefix, sel);
+
+        prefix.truncate(orig_prefix_len);
         return Rect::new(pos.x, pos.y, 128.0, indented.y - pos.y + rect.size.y);
     }
 
