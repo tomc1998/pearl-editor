@@ -14,84 +14,26 @@ mod search;
 
 use std::collections::HashSet;
 use java_model::*;
-use std::boxed::Box;
 
 /// Poll the command buffer & execute the command
 fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
     // Poll command buffer & execute command
     use command::*;
-    use prompt::{PromptType as PT, Prompt as P};
-    use state::Selection;
     match state.command_buffer.lock().unwrap().poll_cmd() {
         Some(Command::Create(CreateCommand(CreateObject::Class))) => {
-            let state_clone = state.clone();
-            // If curr package is some, then fill that in
-            let curr_sel = match *state.project.curr_sel.lock().unwrap() {
-                Some(Selection::Package(ref val)) => Some(val.clone()),
-                _ => None,
-            };
-            state::State::prompt(
-                state.clone(),
-                vec![
-                    PT::Package(P::new_exact("Package Name", true, curr_sel)),
-                    PT::String(P::new("Class Name")),
-                ],
-                Box::new(move |data| {
-                    let mut class = Class::new_empty();
-                    class.name = data[1].val.clone();
-                    let pkg_name = &data[0].val;
-                    let pkg = state_clone.project.add_package(&pkg_name);
-                    unsafe {
-                        (*pkg).decl_list.push(Declaration::Class(class));
-                    }
-                    state_clone.project.regen_decl_completion_list();
-                }),
-            );
+            command::create_class(state.clone());
+        }
+        Some(Command::Create(CreateCommand(CreateObject::Field))) => {
+            command::create_field(state.clone());
         }
         Some(Command::Create(CreateCommand(CreateObject::Package))) => {
-            let state_clone = state.clone();
-            state::State::prompt(
-                state.clone(),
-                vec![PT::Package(P::new("Package Name"))],
-                Box::new(move |data| {
-                    let pkg_name = &data[0].val;
-                    state_clone.project.add_package(&pkg_name);
-                }),
-            );
+            command::create_package(state.clone());
         }
         Some(Command::Select(SelectCommand(SelectObject::Package))) => {
-            let state_clone = state.clone();
-            state::State::prompt(
-                state.clone(),
-                vec![PT::Package(P::new_empty_allowed("Package Name"))],
-                Box::new(move |data| {
-                    // If didn't find a completion, then just assume this is a bad pkg name
-                    let (name, completion_match) = (&data[0].val, data[0].completion_match);
-                    if completion_match {
-                        *state_clone.project.curr_sel.lock().unwrap() =
-                            Some(Selection::Package(name.clone()));
-                    } else {
-                        *state_clone.project.curr_sel.lock().unwrap() = None;
-                    }
-                }),
-            );
+            command::select_package(state.clone());
         }
         Some(Command::Select(SelectCommand(SelectObject::Class))) => {
-            let state_clone = state.clone();
-            state::State::prompt(
-                state.clone(),
-                vec![PT::Decl(P::new_empty_allowed("Name"))],
-                Box::new(move |data| {
-                    // If didn't find a completion, then just assume this is a bad class name
-                    let (name, completion_match) = (&data[0].val, data[0].completion_match);
-                    if completion_match {
-                        *state_clone.project.curr_sel.lock().unwrap() =
-                            Some(Selection::Decl(name.clone()));
-                    } else {
-                        *state_clone.project.curr_sel.lock().unwrap() = None;
-                    }
-                }),
-            );
+            command::select_decl(state.clone());
         }
         None => (),
     }

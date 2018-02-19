@@ -7,6 +7,12 @@
 //! Expanding on this, we can create many types of declarations - ci for interface, ce for enum,
 //! and even expanding to cm / cf for creating methods and fields.
 
+mod create;
+mod select;
+
+pub use self::create::*;
+pub use self::select::*;
+
 mod input_trie;
 use input::*;
 
@@ -15,6 +21,7 @@ use input::*;
 pub enum CreateObject {
     Class,
     Package,
+    Field,
 }
 
 /// The noun for the create command - what object are we creating?
@@ -61,6 +68,9 @@ impl CommandBuffer {
             .unwrap();
         input_trie
             .add_cmd_str("cp", Command::Create(CreateCommand(CreateObject::Package)))
+            .unwrap();
+        input_trie
+            .add_cmd_str("cf", Command::Create(CreateCommand(CreateObject::Field)))
             .unwrap();
         input_trie
             .add_cmd_str("sp", Command::Select(SelectCommand(SelectObject::Package)))
