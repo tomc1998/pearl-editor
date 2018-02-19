@@ -3,6 +3,8 @@
 /// A buffer containing a list of searchable strings. Instead of being a simple Vec<String>, the
 /// whole buffer is instead stored contiguously separated with null terminators, to allow for more
 /// cache efficient subsequence searching.
+///
+/// NOTE: This will be a case INSENSITIVE search.
 pub struct SearchBuffer {
     /// The buffer containing all the chars
     buf: String,
@@ -37,7 +39,7 @@ impl SearchBuffer {
 
         self.buf.reserve(len);
         for s in strings {
-            self.buf.push_str(s);
+            self.buf.push_str(&s);
             self.buf.push_str("\x00");
         }
     }
@@ -49,6 +51,7 @@ impl SearchBuffer {
 
     /// Given a string, return a list of string slices of which the input is a subsequence of.
     pub fn find_all_subsequences(&self, search: &str) -> Vec<&str> {
+        let search = &search.to_lowercase();
         let mut results = Vec::new();
         // Hold a reference into the search string, advance each time a char is a match
         let mut curr_search_iter = search.chars();
@@ -67,7 +70,8 @@ impl SearchBuffer {
             }
             // Not a null char, so check if we can advance curr_search_ix
             if curr_search_iter.as_str().len() > 0 &&
-                c == curr_search_iter.as_str().chars().next().unwrap()
+                c.to_lowercase().next().unwrap() ==
+                    curr_search_iter.as_str().chars().next().unwrap()
             {
                 curr_search_iter.next().unwrap();
             }

@@ -19,7 +19,7 @@ impl Package {
     /// # Caution
     /// As soon as any of the parent packages of the returned package pointer are modified, the
     /// package pointer will be invalidated. The package pointer isn't meant to be stored for long
-    /// time use, and is mainly for the convenience of adding a package then adding a class to the
+    /// time use, and is mainly for the convenience of adding a package then adding a decl to the
     /// deepest package added, without having to traverse the tree twice.
     pub fn new(name: &str) -> (Package, Option<*mut Package>) {
         assert!(name.len() > 0, "Trying to create package with name len 0");
@@ -107,6 +107,39 @@ impl Package {
                 }
             }
         }
+        return names;
+    }
+
+    /// Generate a list of fully qualified decl names.
+    pub fn gen_decl_completion_list(&self) -> Vec<String> {
+
+        // inner function to allow recursion. Given a package and a prefix to that package,
+        // generate a list of decl names, call recursively, and append all to the given curr_pkg
+        // vec. This is to avoid huge reallocations - appending to the same vec is quite easy, vs
+        // appending to 1 vec then a big memcpy.
+        //
+        // The input prefix is mutable to allow us to push names / pop names, but the final value
+        // of prefix should remain the same.
+        fn _gen_decl_completion_list(
+            curr_name_list: &mut Vec<String>,
+            pkg: &Package,
+            prefix: &mut String,
+        ) {
+            let orig_prefix_len = prefix.len();
+            prefix.push_str(&pkg.name);
+            prefix.push_str(".");
+            for d in &pkg.decl_list {
+                curr_name_list.push(prefix.clone() + d.name());
+            }
+            for p in &pkg.package_list {
+                _gen_decl_completion_list(curr_name_list, p, prefix);
+            }
+            prefix.truncate(orig_prefix_len);
+        }
+
+        let mut names = Vec::new();
+        _gen_decl_completion_list(&mut names, self, &mut "".to_owned());
+
         return names;
     }
 }

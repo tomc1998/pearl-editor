@@ -10,6 +10,8 @@ pub enum PromptType {
 
     /// Package prompt. This allows tab completion for subpackages.
     Package(Prompt),
+    /// Declaration prompt. This allows tab completion for qualified class / interface / etc names.
+    Decl(Prompt),
 }
 
 impl PromptType {
@@ -17,6 +19,7 @@ impl PromptType {
         match *self {
             PromptType::String(ref p) => &p.0,
             PromptType::Package(ref p) => &p.0,
+            PromptType::Decl(ref p) => &p.0,
         }
     }
 
@@ -24,6 +27,7 @@ impl PromptType {
         match *self {
             PromptType::String(ref p) => &p.2,
             PromptType::Package(ref p) => &p.2,
+            PromptType::Decl(ref p) => &p.2,
         }
     }
 
@@ -36,6 +40,17 @@ impl PromptType {
                 state
                     .project
                     .pkg_completion_list
+                    .lock()
+                    .unwrap()
+                    .find_all_subsequences(input)
+                    .into_iter()
+                    .map(|s| s.to_owned())
+                    .collect()
+            }
+            PromptType::Decl(_) => {
+                state
+                    .project
+                    .decl_completion_list
                     .lock()
                     .unwrap()
                     .find_all_subsequences(input)

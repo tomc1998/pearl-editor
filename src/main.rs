@@ -44,6 +44,7 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                     unsafe {
                         (*pkg).decl_list.push(Declaration::Class(class));
                     }
+                    state_clone.project.regen_decl_completion_list();
                 }),
             );
         }
@@ -72,6 +73,15 @@ fn poll_cmd_buffer(state: std::sync::Arc<state::State>) {
                     } else {
                         *state_clone.project.curr_sel.lock().unwrap() = None;
                     }
+                }),
+            );
+        }
+        Some(Command::Select(SelectCommand(SelectObject::Class))) => {
+            state::State::prompt(
+                state.clone(),
+                vec![PT::Decl(P::new_empty_allowed("Class Name"))],
+                Box::new(move |data| {
+                    println!("SELECTING CLASS {}", data[0]);
                 }),
             );
         }
@@ -112,6 +122,7 @@ fn main() {
             (*p).decl_list = declarations;
         }
     }
+    state.project.regen_decl_completion_list();
 
     // Create views
     let package_view = view::PackageListView::new(state.clone(), fh);

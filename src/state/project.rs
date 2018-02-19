@@ -6,8 +6,8 @@ use search::SearchBuffer;
 pub enum Selection {
     /// Selection of a package. Contains the qualified package name.
     Package(String),
-    /// Selection of a class. Contains the qualified class name.
-    Class(String),
+    /// Selection of a class / interface. Contains the qualified class name.
+    Decl(String),
 }
 
 impl Selection {
@@ -27,6 +27,10 @@ pub struct Project {
     /// A searchable list of strings for autocompleting packages
     pub pkg_completion_list: Mutex<SearchBuffer>,
 
+    /// A searchable list of strings for autocompleting classes. This will probably be pretty
+    /// fucking heavyweight to search.
+    pub decl_completion_list: Mutex<SearchBuffer>,
+
     /// A reference to the current selcetion. This will be highlighted when rendering, and allows
     /// for faster editing due to context-aware commands (i.e. create class will already have
     /// package filled in when that package is selected)
@@ -39,11 +43,22 @@ impl Project {
             package_list: Mutex::new(Vec::new()),
             curr_sel: Mutex::new(None),
             pkg_completion_list: Mutex::new(SearchBuffer::new()),
+            decl_completion_list: Mutex::new(SearchBuffer::new()),
         }
     }
 
     /// Regenerate the package completion list.
     pub fn regen_pkg_completion_list(&self) {
+        let decl_completion_list = &mut *self.decl_completion_list.lock().unwrap();
+        decl_completion_list.clear();
+        let package_list = self.package_list.lock().unwrap();
+        for p in package_list.iter() {
+            decl_completion_list.add_strings_owned(&p.gen_decl_completion_list()[..]);
+        }
+    }
+
+    /// Regenerate the decl completion list.
+    pub fn regen_decl_completion_list(&self) {
         let pkg_completion_list = &mut *self.pkg_completion_list.lock().unwrap();
         pkg_completion_list.clear();
         let package_list = self.package_list.lock().unwrap();
@@ -51,6 +66,7 @@ impl Project {
             pkg_completion_list.add_strings_owned(&p.gen_package_completion_list()[..]);
         }
     }
+
 
     /// Given a full qualified package name, returns true if that package exists.
     /// If name len is 0, this returns true (default package always exists

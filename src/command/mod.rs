@@ -20,6 +20,7 @@ pub enum CreateObject {
 /// The noun for the create command - what object are we creating?
 #[derive(Clone, Debug)]
 pub enum SelectObject {
+    Class,
     Package,
 }
 
@@ -63,6 +64,9 @@ impl CommandBuffer {
             .unwrap();
         input_trie
             .add_cmd_str("sp", Command::Select(SelectCommand(SelectObject::Package)))
+            .unwrap();
+        input_trie
+            .add_cmd_str("sc", Command::Select(SelectCommand(SelectObject::Class)))
             .unwrap();
         return input_trie;
     }
