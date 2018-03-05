@@ -1,6 +1,7 @@
 use super::Declaration;
 
 pub struct Package {
+    /// Name is the name of JUST this package.
     pub name: String,
     pub decl_list: Vec<Declaration>,
     pub package_list: Vec<Package>,
@@ -141,5 +142,31 @@ impl Package {
         _gen_decl_completion_list(&mut names, self, &mut "".to_owned());
 
         return names;
+    }
+
+    /// Find a package given a fully qualified name.
+    /// If the package could not be found, return the package we 'made it to' whilst searching.
+    /// This might be self. If the package could not be found, false is returned as the second item
+    /// in the tuple - if the package was found, true is returned.
+    pub fn find_pkg(&self, name: &str) -> (&Package, bool) {
+        if name.len() == 0 { return (self, true); }
+
+        // Inner function to allow recursion.
+        fn _find_pkg(splits: &mut [&str], curr_pkg: &Package) -> (&Package, bool) {
+            debug_assert_eq!(splits.len(), 0);
+            for p in &curr_pkg.package_list {
+                if p.name == splits[0] {
+                    if splits.len() == 1 {
+                        return (p, true)
+                    } else {
+                        return _find_pkg(&mut splits[1..], p);
+                    }
+                }
+            }
+            return (curr_pkg, false);
+        }
+
+        let mut splits = name.split(".");
+        return _find_pkg(splits, self);
     }
 }
