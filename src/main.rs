@@ -1,3 +1,8 @@
+// Setup benching (as long as bench feature enabled)
+#![cfg_attr(feature = "bench", feature(test))]
+#[cfg(feature = "bench")]
+extern crate test;
+
 extern crate quick_gfx as qgfx;
 extern crate cgmath;
 extern crate winit;
@@ -54,7 +59,7 @@ fn main() {
     charsets.insert(qgfx::Charset::Punctuation);
     let fh = g.cache_glyphs(
         "assets/FreeMonoBold.ttf",
-        16.0,
+        12.0,
         &qgfx::gen_charset(&charsets)[..],
     ).unwrap();
 

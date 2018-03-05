@@ -236,10 +236,10 @@ mod tests {
         input_trie
             .add_cmd_str("cp", Command::Create(CreateCommand(CreateObject::Package)))
             .unwrap();
-        assert_eq!(input_trie.advance_node_ref(None, (VKC::C, 0)), Some(0));
-        assert_eq!(input_trie.advance_node_ref(Some(0), (VKC::C, 0)), Some(1));
-        assert_eq!(input_trie.advance_node_ref(Some(0), (VKC::P, 0)), Some(2));
-        assert_eq!(input_trie.advance_node_ref(Some(1), (VKC::P, 0)), None);
-        assert_eq!(input_trie.advance_node_ref(Some(2), (VKC::P, 0)), None);
+        assert_eq!(input_trie.advance_node_ref(None, InputChunk(VKC::C, 0)), Some(0));
+        assert_eq!(input_trie.advance_node_ref(Some(0), InputChunk(VKC::C, 0)), Some(1));
+        assert_eq!(input_trie.advance_node_ref(Some(0), InputChunk(VKC::P, 0)), Some(2));
+        assert_eq!(input_trie.advance_node_ref(Some(1), InputChunk(VKC::P, 0)), None);
+        assert_eq!(input_trie.advance_node_ref(Some(2), InputChunk(VKC::P, 0)), None);
     }
 }

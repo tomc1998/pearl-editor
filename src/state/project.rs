@@ -1,12 +1,13 @@
 use java_model::*;
 use std::sync::Mutex;
 use search::SearchBuffer;
+use std::ptr::{null, null_mut};
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Selection {
     /// Selection of a package. Contains the qualified package name.
     Package(String),
-    /// Selection of a class / interface. Contains the qualified class name.
+    /// Selection of a decl / interface. Contains the qualified decl name.
     Decl(String),
 }
 
@@ -36,12 +37,12 @@ pub struct Project {
     /// A searchable list of strings for autocompleting packages
     pub pkg_completion_list: Mutex<SearchBuffer>,
 
-    /// A searchable list of strings for autocompleting classes. This will probably be pretty
+    /// A searchable list of strings for autocompleting decls. This will probably be pretty
     /// fucking heavyweight to search.
     pub decl_completion_list: Mutex<SearchBuffer>,
 
     /// A reference to the current selcetion. This will be highlighted when rendering, and allows
-    /// for faster editing due to context-aware commands (i.e. create class will already have
+    /// for faster editing due to context-aware commands (i.e. create decl will already have
     /// package filled in when that package is selected)
     pub curr_sel: Mutex<Option<Selection>>,
 }
@@ -81,7 +82,6 @@ impl Project {
     /// If name len is 0, this returns true (default package always exists
     #[allow(dead_code)]
     pub fn package_exists(&self, name: &str) -> bool {
-        use std::ptr::null;
 
         if name.len() == 0 {
             return true;
@@ -128,7 +128,7 @@ impl Project {
     ///
     /// # Caution
     /// See package::Package::new() for details - the mut pointer returned isn't guaranteed to be
-    /// valid forever, and is only a convenience measure to quickly add a class to the deepest
+    /// valid forever, and is only a convenience measure to quickly add a decl to the deepest
     /// package.
     pub fn add_package(&self, name: &str) -> *mut Package {
         let mut deepest: Option<*mut Package> = None;
@@ -157,5 +157,61 @@ impl Project {
         }
         self.regen_pkg_completion_list();
         return deepest.unwrap();
+    }
+
+    /// Add a member to a given fully qualified decl name. Panics if decl not found. Eventually
+    /// this should probably return a result!;)
+    pub fn add_decl_member(&self, name: &str, field_name: &str) {
+        let splits : Vec<&str> = name.split(".").collect();
+        let first_pkg_name = splits[0];
+        let mut package_list = self.package_list.lock().unwrap();
+        let mut pkg_ptr: *mut Package = null_mut();
+        for p in package_list.iter_mut() {
+            if p.name == first_pkg_name {
+                pkg_ptr = p;
+                break;
+            }
+        }
+        if pkg_ptr == null_mut() {
+            panic!("Package not found");
+        }
+
+        'outer: for s in &splits[1..splits.len()-1] {
+            let curr_pkg;
+            unsafe {
+                curr_pkg = &mut *pkg_ptr;
+            }
+            let package_list = &mut curr_pkg.package_list;
+            for p in package_list {
+                if p.name == *s {
+                    pkg_ptr = p;
+                    continue 'outer;
+                }
+            }
+            // If we're here, the package wasn't found
+            panic!("Adding decl member to unknown decl");
+        }
+
+        // Find decl in pkg_ptr
+        let p; 
+        let mut decl = None;
+        unsafe { p = &mut *pkg_ptr };
+        for d in &mut p.decl_list {
+            if &d.name() == splits.last().unwrap() {
+                decl = Some(d);
+                break;
+            }
+        }
+        assert!(decl.is_some(), "Adding decl member to unknown decl");
+
+        match *decl.unwrap() {
+            Declaration::Class(ref mut c) => {
+                c.members.push(ClassMember {
+                    modifiers: vec![Modifier::Private],
+                    name: field_name.to_owned(),
+                    member_type: MemberType::Variable,
+                });
+            }
+        }
     }
 }

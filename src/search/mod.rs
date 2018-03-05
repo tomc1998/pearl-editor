@@ -51,6 +51,7 @@ impl SearchBuffer {
 
     /// Given a string, return a list of string slices of which the input is a subsequence of.
     pub fn find_all_subsequences(&self, search: &str) -> Vec<&str> {
+        use std::ascii::AsciiExt;
         let search = &search.to_lowercase();
         let mut results = Vec::with_capacity(1000);
         // Hold a reference into the search string, advance each time a char is a match
@@ -79,7 +80,9 @@ impl SearchBuffer {
         return results;
     }
 
+    #[allow(dead_code)]
     pub fn find_all_containing_char(&self, search: char) -> Vec<&str> {
+        use std::ascii::AsciiExt;
         let search = search.to_ascii_lowercase();
         let mut results = Vec::with_capacity(1000);
         let mut curr_base = 0; // Base ix of the curr string in buf

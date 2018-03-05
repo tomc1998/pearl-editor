@@ -11,3 +11,16 @@ smallvec = "0.6.0"
 
 [profile.dev]
 debug = true
+
+# The benchmarking profile, used for `cargo bench` and `cargo test --release`.
+[profile.bench]
+opt-level = 3
+debug = false
+rpath = false
+lto = true
+debug-assertions = false
+codegen-units = 2
+panic = 'unwind'
+
+[features]
+bench = []
