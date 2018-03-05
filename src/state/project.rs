@@ -1,7 +1,7 @@
 use java_model::*;
 use std::sync::Mutex;
 use search::SearchBuffer;
-use std::ptr::{null, null_mut};
+use std::ptr::null_mut;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Selection {
@@ -82,41 +82,15 @@ impl Project {
     /// If name len is 0, this returns true (default package always exists
     #[allow(dead_code)]
     pub fn package_exists(&self, name: &str) -> bool {
-
-        if name.len() == 0 {
-            return true;
-        }
-
-        let mut splits = name.split(".");
-        let first_pkg_name = splits.next().unwrap();
-        let package_list = self.package_list.lock().unwrap();
-        let mut pkg_ptr: *const Package = null();
-        for p in package_list.iter() {
-            if p.name == first_pkg_name {
-                pkg_ptr = p;
+        let mut exists = false;
+        for p in self.package_list.lock().unwrap().iter() {
+            let (_, _exists) = p.find_pkg(name);
+            if _exists {
+                exists = true;
                 break;
             }
         }
-        if pkg_ptr == null() {
-            return false;
-        }
-
-        'outer: for s in splits {
-            let curr_pkg;
-            unsafe {
-                curr_pkg = &*pkg_ptr;
-            }
-            let package_list = &curr_pkg.package_list;
-            for p in package_list {
-                if p.name == s {
-                    pkg_ptr = p;
-                    continue 'outer;
-                }
-            }
-            // If we're here, the package wasn't found
-            return false;
-        }
-        return true;
+        return exists;
     }
 
     /// Add a fully qualified package name. If the start of the package name is already used, trace
