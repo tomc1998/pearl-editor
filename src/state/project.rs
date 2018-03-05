@@ -58,7 +58,7 @@ impl Project {
     }
 
     /// Regenerate the package completion list.
-    pub fn regen_pkg_completion_list(&self) {
+    pub fn regen_decl_completion_list(&self) {
         let decl_completion_list = &mut *self.decl_completion_list.lock().unwrap();
         decl_completion_list.clear();
         let package_list = self.package_list.lock().unwrap();
@@ -68,7 +68,7 @@ impl Project {
     }
 
     /// Regenerate the decl completion list.
-    pub fn regen_decl_completion_list(&self) {
+    pub fn regen_pkg_completion_list(&self) {
         let pkg_completion_list = &mut *self.pkg_completion_list.lock().unwrap();
         pkg_completion_list.clear();
         let package_list = self.package_list.lock().unwrap();
