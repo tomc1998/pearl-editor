@@ -187,7 +187,7 @@ impl PromptInput {
                     // If we have a completion selected, then we select that before inserting the
                     // next char
                     if self.active_completion.is_some() {
-                        self.inputs[self.curr_prompt].val = 
+                        self.inputs[self.curr_prompt].val =
                             self.curr_completions[self.active_completion.unwrap()].clone();
                         self.active_completion = None;
                     }

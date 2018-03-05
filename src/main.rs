@@ -87,16 +87,11 @@ fn main() {
     while !closed {
         {
             let (display_w, display_h) = g.get_display_size();
+            let screen_size = cgmath::Vector2::new(display_w as f32, display_h as f32);
             let mut controller = g.get_renderer_controller();
-            package_view.render(&mut controller, cgmath::Vector2::new(0.0, 0.0));
-            command_buffer_view.render(
-                &mut controller,
-                cgmath::Vector2::new(display_w as f32, display_h as f32),
-            );
-            prompt_input_view.render(
-                &mut controller,
-                cgmath::Vector2::new(display_w as f32, display_h as f32),
-            );
+            package_view.render(&mut controller, screen_size.clone());
+            command_buffer_view.render(&mut controller, screen_size.clone());
+            prompt_input_view.render(&mut controller, screen_size.clone());
             controller.flush();
         }
 

@@ -64,7 +64,10 @@ pub fn create_field(state: Arc<state::State>) {
             PT::String(P::new("Name")),
         ],
         Box::new(move |data| {
-            state_clone.project.add_decl_member(&data[0].val, &data[2].val);
+            state_clone.project.add_decl_member(
+                &data[0].val,
+                &data[2].val,
+            );
             println!("{:?}", data);
         }),
     );

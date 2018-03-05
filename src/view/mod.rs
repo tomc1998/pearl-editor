@@ -13,6 +13,11 @@ use cgmath;
 use std;
 use state;
 
+/// The height of an item in the package list
+const ITEM_HEIGHT: f32 = 16.0;
+/// The width of rht package list
+const ITEM_WIDTH: f32 = 200.0;
+
 pub struct PackageListView {
     pub state: std::sync::Arc<state::State>,
 
@@ -37,8 +42,7 @@ impl PackageListView {
         g: &mut RendererController,
         decl_list: &[Declaration],
         offset: cgmath::Vector2<f32>,
-        decl_height: f32,
-        decl_width: f32,
+        text_indent: f32,
         prefix: &mut String,
         sel: &Option<state::Selection>,
     ) -> Rect {
@@ -46,26 +50,26 @@ impl PackageListView {
         for d in decl_list {
             let orig_prefix_len = prefix.len();
             prefix.push_str(d.name().as_ref());
-            let col = if sel.is_none() || !sel.as_ref().unwrap().is_decl(prefix.as_str()) {
-                [0.1, 0.1, 0.1, 1.0]
-            } else {
-                [0.2, 0.5, 0.2, 1.0]
-            };
-            g.rect(&[pos.x, pos.y, decl_width, decl_height], &col);
+            if sel.is_some() && sel.as_ref().unwrap().is_decl(prefix.as_str()) {
+                g.rect(
+                    &[pos.x, pos.y, ITEM_WIDTH, ITEM_HEIGHT],
+                    &[0.2, 0.5, 0.2, 1.0],
+                );
+            }
             g.text(
-                prefix.as_str(),
-                &[pos.x, pos.y + decl_height / 2.0],
+                d.name().as_ref(),
+                &[pos.x + text_indent + 4.0, pos.y + ITEM_HEIGHT / 2.0 + 4.0],
                 self.font,
                 &[1.0, 1.0, 1.0, 1.0],
             );
-            pos.y += decl_height;
+            pos.y += ITEM_HEIGHT;
             prefix.truncate(orig_prefix_len);
         }
         return Rect::new(
             offset.x,
             offset.y,
-            decl_width,
-            decl_height * decl_list.len() as f32,
+            ITEM_WIDTH,
+            ITEM_HEIGHT * decl_list.len() as f32,
         );
 
     }
@@ -79,22 +83,23 @@ impl PackageListView {
         &self,
         g: &mut RendererController,
         pos: cgmath::Vector2<f32>,
+        text_indent: f32,
         pkg: &Package,
         prefix: &mut String,
         sel: &Option<state::Selection>,
     ) -> Rect {
         let orig_prefix_len = prefix.len();
         prefix.push_str(pkg.name.as_ref());
-        let col = if sel.is_none() || !sel.as_ref().unwrap().is_package(prefix.as_str()) {
-            [0.1, 0.1, 0.1, 1.0]
-        } else {
-            [0.2, 0.5, 0.2, 1.0]
-        };
+        if sel.is_some() && sel.as_ref().unwrap().is_package(prefix.as_str()) {
+            g.rect(
+                &[pos.x, pos.y, ITEM_WIDTH, ITEM_HEIGHT],
+                &[0.2, 0.5, 0.2, 1.0],
+            );
+        }
         // render this package - choose a highlighted colour if this prefix is the selected one
-        g.rect(&[pos.x, pos.y, 128.0 - 16.0, 32.0], &col);
         g.text(
             prefix,
-            &[pos.x, pos.y + 32.0 / 2.0],
+            &[pos.x + text_indent + 4.0, pos.y + ITEM_HEIGHT / 2.0 + 4.0],
             self.font,
             &[1.0, 1.0, 1.0, 1.0],
         );
@@ -103,29 +108,43 @@ impl PackageListView {
         // Add '.' to our pkg name so we can use it as a prefix
         prefix.push_str(".");
         let mut indented = cgmath::Vector2 {
-            x: pos.x + 16.0,
-            y: pos.y + 32.0,
+            x: pos.x,
+            y: pos.y + ITEM_HEIGHT,
         };
         for p in &pkg.package_list {
-            let rect = self.render_pkg(g, indented, p, prefix, sel);
+            let rect = self.render_pkg(g, indented, text_indent + ITEM_HEIGHT, p, prefix, sel);
             indented.y += rect.size.y;
         }
 
 
-        let rect = self.render_decl_list(g, &pkg.decl_list[..], indented, 32.0, 128.0 - 16.0, prefix, sel);
+        let rect = self.render_decl_list(
+            g,
+            &pkg.decl_list[..],
+            indented,
+            text_indent + ITEM_HEIGHT,
+            prefix,
+            sel,
+        );
 
         prefix.truncate(orig_prefix_len);
-        return Rect::new(pos.x, pos.y, 128.0, indented.y - pos.y + rect.size.y);
+        return Rect::new(pos.x, pos.y, ITEM_WIDTH, indented.y - pos.y + rect.size.y);
     }
 
     /// Renders a list of packages.
-    /// Returns the bounding box used up from rendering.
-    pub fn render(&self, g: &mut RendererController, offset: cgmath::Vector2<f32>) {
-        let mut pos = offset;
+    pub fn render(&self, g: &mut RendererController, screen_size: cgmath::Vector2<f32>) {
+        let mut pos = cgmath::Vector2 { x: 0.0, y: 0.0 };
         let package_list = &*self.state.project.package_list.lock().unwrap();
         let selected_pkg_name = &*self.state.project.curr_sel.lock().unwrap();
+
+        // Render background
+        g.rect(
+            &[pos.x, pos.y, ITEM_WIDTH, screen_size.y],
+            &[0.1, 0.1, 0.1, 1.0],
+        );
+
+        // Render items
         for p in package_list {
-            let rect = self.render_pkg(g, pos, p, &mut "".to_owned(), selected_pkg_name);
+            let rect = self.render_pkg(g, pos, 0.0, p, &mut "".to_owned(), selected_pkg_name);
             pos.y += rect.size.y;
         }
     }

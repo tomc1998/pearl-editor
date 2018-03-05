@@ -136,7 +136,7 @@ impl Project {
     /// Add a member to a given fully qualified decl name. Panics if decl not found. Eventually
     /// this should probably return a result!;)
     pub fn add_decl_member(&self, name: &str, field_name: &str) {
-        let splits : Vec<&str> = name.split(".").collect();
+        let splits: Vec<&str> = name.split(".").collect();
         let first_pkg_name = splits[0];
         let mut package_list = self.package_list.lock().unwrap();
         let mut pkg_ptr: *mut Package = null_mut();
@@ -150,7 +150,7 @@ impl Project {
             panic!("Package not found");
         }
 
-        'outer: for s in &splits[1..splits.len()-1] {
+        'outer: for s in &splits[1..splits.len() - 1] {
             let curr_pkg;
             unsafe {
                 curr_pkg = &mut *pkg_ptr;
@@ -167,7 +167,7 @@ impl Project {
         }
 
         // Find decl in pkg_ptr
-        let p; 
+        let p;
         let mut decl = None;
         unsafe { p = &mut *pkg_ptr };
         for d in &mut p.decl_list {
