@@ -176,35 +176,35 @@ impl Package {
         return _find_pkg(splits, self);
     }
 
-    /// Find a package given a fully qualified name.
-    /// If the package could not be found, return the package we 'made it to' whilst searching.
-    /// This might be self. If the package could not be found, false is returned as the second item
-    /// in the tuple - if the package was found, true is returned.
-    pub fn find_pkg_mut(&mut self, name: &str) -> (&mut Package, bool) {
-        use std::iter::Peekable;
-        if name.len() == 0 {
-            return (self, false);
-        }
+    ///// Find a package given a fully qualified name.
+    ///// If the package could not be found, return the package we 'made it to' whilst searching.
+    ///// This might be self. If the package could not be found, false is returned as the second item
+    ///// in the tuple - if the package was found, true is returned.
+    //pub fn find_pkg_mut(&mut self, name: &str) -> (&mut Package, bool) {
+    //    use std::iter::Peekable;
+    //    if name.len() == 0 {
+    //        return (self, false);
+    //    }
 
-        // Inner function to allow recursion.
-        fn _find_pkg<'a, 'b, I: Iterator<Item = &'b str>>(
-            mut splits: Peekable<I>,
-            curr_pkg: &'a mut Package,
-        ) -> (&'a mut Package, bool) {
-            let name = splits.next().unwrap();
-            for p in &mut curr_pkg.package_list {
-                if p.name == name {
-                    if splits.peek().is_some() {
-                        return (p, true);
-                    } else {
-                        return _find_pkg(splits, p);
-                    }
-                }
-            }
-            return (curr_pkg, false);
-        }
+    //    // Inner function to allow recursion.
+    //    fn _find_pkg<'a, 'b, I: Iterator<Item = &'b str>>(
+    //        mut splits: Peekable<I>,
+    //        curr_pkg: &'a mut Package,
+    //    ) -> (&'a mut Package, bool) {
+    //        let name = splits.next().unwrap();
+    //        for p in &mut curr_pkg.package_list {
+    //            if p.name == name {
+    //                if splits.peek().is_some() {
+    //                    return (p, true);
+    //                } else {
+    //                    return _find_pkg(splits, p);
+    //                }
+    //            }
+    //        }
+    //        return (curr_pkg, false);
+    //    }
 
-        let splits = name.split(".").peekable();
-        return _find_pkg(splits, self);
-    }
+    //    let splits = name.split(".").peekable();
+    //    return _find_pkg(splits, self);
+    //}
 }
