@@ -32,23 +32,13 @@ impl Package {
             decl_list: Vec::new(),
             package_list: Vec::new(),
         };
-
-        let mut curr_pkg: *mut Package = &mut root;
-        for s in splits {
-            unsafe {
-                (*curr_pkg).package_list.push(Package {
-                    name: s.to_owned(),
-                    decl_list: Vec::new(),
-                    package_list: Vec::new(),
-                });
-                curr_pkg = &mut (*curr_pkg).package_list[0];
-            }
-        }
-
-        if curr_pkg == &mut root {
+        let pkg : *mut Package = root.add_subpackage(name);
+        // Only return pkg if it's not a pointer to the root (package is returned on the stack, so
+        // returning a pointer to pkg in that case would be a segfault)
+        if pkg as *mut Package == &mut root as *mut Package {
             return (root, None);
         } else {
-            return (root, Some(curr_pkg));
+            return (root, Some(pkg as *mut Package));
         }
     }
 
@@ -255,6 +245,20 @@ impl Package {
 #[cfg(test)]
 mod tests {
     use super::*;
+
+    #[test]
+    pub fn new_pkg() {
+        let (p, deepest) = Package::new("com.tom.example");
+        unsafe {
+            assert!(deepest.is_some());
+            assert_eq!((*deepest.unwrap()).name, "example");
+            assert_eq!(p.name, "com");
+            assert_eq!(p.package_list[0].name, "tom");
+        }
+        let (p, deepest) = Package::new("newpackage");
+        assert!(deepest.is_none());
+        assert_eq!(p.name, "newpackage");
+    }
 
     #[test]
     pub fn find_pkg_and_find_package_mut() {
