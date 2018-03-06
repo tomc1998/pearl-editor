@@ -57,7 +57,7 @@ impl Project {
         }
     }
 
-    /// Regenerate the package completion list.
+    /// Regenerate the decl completion list.
     pub fn regen_decl_completion_list(&self) {
         let decl_completion_list = &mut *self.decl_completion_list.lock().unwrap();
         decl_completion_list.clear();
@@ -67,7 +67,8 @@ impl Project {
         }
     }
 
-    /// Regenerate the decl completion list.
+    /// Regenerate the package completion list.
+    #[allow(dead_code)]
     pub fn regen_pkg_completion_list(&self) {
         let pkg_completion_list = &mut *self.pkg_completion_list.lock().unwrap();
         pkg_completion_list.clear();
@@ -77,60 +78,28 @@ impl Project {
         }
     }
 
-
-    /// Given a full qualified package name, returns true if that package exists.
-    /// If name len is 0, this returns true (default package always exists
-    #[allow(dead_code)]
-    pub fn package_exists(&self, name: &str) -> bool {
-        let mut exists = false;
-        for p in self.package_list.lock().unwrap().iter() {
-            let (_, remaining) = p.find_pkg(name);
-            if remaining.is_none() {
-                exists = true;
-                break;
+    /// Add a declaration to the given package
+    pub fn add_decl(&self, pkg: &str, decl: Declaration) {
+        assert!(pkg.len() > 0, "Trying to add decl to default package, not implemented: {}", pkg);
+        self.add_package(pkg);
+        for p in self.package_list.lock().unwrap().iter_mut() {
+            if p.add_decl(pkg, decl.clone()) {
+                return;
             }
         }
-        return exists;
     }
 
     /// Add a fully qualified package name. If the start of the package name is already used, trace
-    /// down the tree and insert new package in the appropriate replaces. Return a mutable
-    /// pointer to the last created package.
-    ///
-    /// This will lock the package list mutex, and the mutex will stay locked whilst you hold the
-    /// package reference.
-    ///
-    /// # Caution
-    /// See package::Package::new() for details - the mut pointer returned isn't guaranteed to be
-    /// valid forever, and is only a convenience measure to quickly add a decl to the deepest
-    /// package.
-    pub fn add_package(&self, name: &str) -> *mut Package {
-        let mut deepest: Option<*mut Package> = None;
-        {
-            let first_pkg_name = &name[0..name.find(".").unwrap_or(name.len())];
-            let mut package_list = self.package_list.lock().unwrap();
-            let mut found_subpkg = false;
-            for p in &mut package_list.iter_mut() {
-                if p.name == first_pkg_name {
-                    deepest = Some(p.add_subpackage(name));
-                    found_subpkg = true;
-                    break;
-                }
+    /// down the tree and insert new package in the appropriate replaces.     
+    pub fn add_package(&self, name: &str) {
+        let mut package_list = self.package_list.lock().unwrap();
+        for p in package_list.iter_mut() {
+            let deepest = p.add_subpackage(name);
+            if deepest.is_some() {
+                return;
             }
-            if found_subpkg {
-                drop(package_list); // Drop otherwise we deadlock with regen_pkg_completion_list
-                self.regen_pkg_completion_list();
-                return deepest.unwrap();
-            }
-            let (pkg, mut deepest_opt) = Package::new(name);
-            package_list.push(pkg);
-            if deepest_opt.is_none() {
-                deepest_opt = Some(package_list.last_mut().unwrap() as *mut Package);
-            }
-            deepest = deepest_opt;
         }
-        self.regen_pkg_completion_list();
-        return deepest.unwrap();
+        package_list.push(Package::new(name).0);
     }
 
     /// Add a member to a given fully qualified decl name. Panics if decl not found. Eventually

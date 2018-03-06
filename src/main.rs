@@ -66,15 +66,9 @@ fn main() {
     let mut closed = false;
 
     for jj in 0..3 {
-        let mut declarations = Vec::new();
         for ii in 0..3 {
-            let mut class = Class::new_empty();
-            class.name = format!("MyClass{}", ii);
-            declarations.push(Declaration::Class(class));
-        }
-        let p = state.project.add_package(&format!("com.tom.package{}", jj));
-        unsafe {
-            (*p).decl_list = declarations;
+            let class = Class::new_with_name(&format!("MyClass{}", ii));
+            state.project.add_decl(&format!("com.tom.package{}", jj), Declaration::Class(class));
         }
     }
     state.project.regen_decl_completion_list();

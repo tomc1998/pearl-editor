@@ -32,7 +32,7 @@ impl Package {
             decl_list: Vec::new(),
             package_list: Vec::new(),
         };
-        let pkg : *mut Package = root.add_subpackage(name);
+        let pkg : *mut Package = root.add_subpackage(name).unwrap();
         // Only return pkg if it's not a pointer to the root (package is returned on the stack, so
         // returning a pointer to pkg in that case would be a segfault)
         if pkg as *mut Package == &mut root as *mut Package {
@@ -45,18 +45,18 @@ impl Package {
     /// Given the (full) name of a package, traces down the tree until there's a divergence, then
     /// adds packages from there.
     ///
-    /// Panics if the initial name of the package does not match the name of this package - for
-    /// example, trying to call add_subpackage with the name com.tom.example on a package named
-    /// 'asd' would panic, as 'com' does not match 'asd'. Returns a mutable reference to the
-    /// package that was added.
-    pub fn add_subpackage(&mut self, name: &str) -> &mut Package {
+    /// # Returns
+    /// None if the first part of the name didn't match this package's name. For example, if the
+    /// name was "com.tom.example" and this package's name was "org.asd", this would return None,
+    /// as org does not match com.
+    pub fn add_subpackage(&mut self, name: &str) -> Option<&mut Package> {
         let (deepest, remaining) = self.find_pkg_mut(name);
         if deepest.is_none() {
-            panic!("Tried adding a subpackage to a package with a name that doesn't match")
+            return None;
         };
         let deepest = deepest.unwrap();
         match remaining {
-            None => return deepest,
+            None => return Some(deepest),
             Some(remaining) => {
                 // add packages.                 
                 let mut curr_pkg: *mut Package = deepest;
@@ -67,10 +67,22 @@ impl Package {
                     }
                 }
                 unsafe {
-                    return &mut *curr_pkg;
+                    return Some(&mut *curr_pkg);
                 }
             }
         }
+    }
+
+    /// Add a declaration to the package, creating subpackages where needed
+    /// # Return
+    /// True if decl was added, false if this package did not match
+    pub fn add_decl(&mut self, pkg: &str, decl: Declaration) -> bool {
+        let pkg = match self.add_subpackage(pkg.trim_right_matches(|c| c != '.')) {
+            None => return false,
+            Some(p) => p,
+        };
+        pkg.decl_list.push(decl);
+        return true;
     }
 
     /// Generate a list of fully qualified package names - e.g. for the package com.tom.example,
@@ -316,6 +328,7 @@ mod tests {
         assert_eq!(p.package_list.len(), 2);
         assert_eq!(p.package_list[1].package_list.len(), 1);
         assert_eq!(p.package_list[1].package_list[0].name, "foo");
+        assert_eq!(p.add_subpackage("asd"), None);
     }
 
     #[test]

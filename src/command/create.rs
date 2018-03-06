@@ -20,13 +20,8 @@ pub fn create_class(state: Arc<state::State>) {
             PT::String(P::new("Class Name")),
         ],
         Box::new(move |data| {
-            let mut class = Class::new_empty();
-            class.name = data[1].val.clone();
-            let pkg_name = &data[0].val;
-            let pkg = state_clone.project.add_package(&pkg_name);
-            unsafe {
-                (*pkg).decl_list.push(Declaration::Class(class));
-            }
+            let class = Class::new_with_name(&data[1].val.clone());
+            state_clone.project.add_decl(&data[0].val, Declaration::Class(class));
             state_clone.project.regen_decl_completion_list();
         }),
     );
