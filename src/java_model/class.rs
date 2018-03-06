@@ -1,4 +1,5 @@
 use Modifier;
+use Field;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum MemberType {
@@ -8,10 +9,8 @@ pub enum MemberType {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct ClassMember {
-    pub modifiers: Vec<Modifier>,
-    pub name: String,
-    pub member_type: MemberType,
+pub enum ClassMember {
+    Field(Field),
 }
 
 

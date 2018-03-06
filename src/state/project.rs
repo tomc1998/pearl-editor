@@ -1,7 +1,12 @@
 use java_model::*;
 use std::sync::Mutex;
 use search::SearchBuffer;
-use std::ptr::null_mut;
+
+pub enum AddDeclErr {
+    DeclNotFound,
+    #[allow(dead_code)]
+    BadDeclType
+}
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Selection {
@@ -102,59 +107,18 @@ impl Project {
         package_list.push(Package::new(name).0);
     }
 
-    /// Add a member to a given fully qualified decl name. Panics if decl not found. Eventually
-    /// this should probably return a result!;)
-    pub fn add_decl_member(&self, name: &str, field_name: &str) {
-        let splits: Vec<&str> = name.split(".").collect();
-        let first_pkg_name = splits[0];
-        let mut package_list = self.package_list.lock().unwrap();
-        let mut pkg_ptr: *mut Package = null_mut();
-        for p in package_list.iter_mut() {
-            if p.name == first_pkg_name {
-                pkg_ptr = p;
-                break;
-            }
-        }
-        if pkg_ptr == null_mut() {
-            panic!("Package not found");
-        }
-
-        'outer: for s in &splits[1..splits.len() - 1] {
-            let curr_pkg;
-            unsafe {
-                curr_pkg = &mut *pkg_ptr;
-            }
-            let package_list = &mut curr_pkg.package_list;
-            for p in package_list {
-                if p.name == *s {
-                    pkg_ptr = p;
-                    continue 'outer;
+    /// Add a field to a given fully qualified decl name. Returns Err if decl not found, or if decl
+    /// wasn't the type of decl to accept fields (i.e. enum)
+    pub fn add_decl_field(&self, name: &str, field: Field) -> Result<(), AddDeclErr>{
+        for p in self.package_list.lock().unwrap().iter_mut() {
+            match p.find_decl_mut(name) {
+                Some(&mut Declaration::Class(ref mut c)) => {
+                    c.members.push(ClassMember::Field(field));
+                    return Ok(());
                 }
-            }
-            // If we're here, the package wasn't found
-            panic!("Adding decl member to unknown decl");
-        }
-
-        // Find decl in pkg_ptr
-        let p;
-        let mut decl = None;
-        unsafe { p = &mut *pkg_ptr };
-        for d in &mut p.decl_list {
-            if &d.name() == splits.last().unwrap() {
-                decl = Some(d);
-                break;
+                _ => ()
             }
         }
-        assert!(decl.is_some(), "Adding decl member to unknown decl");
-
-        match *decl.unwrap() {
-            Declaration::Class(ref mut c) => {
-                c.members.push(ClassMember {
-                    modifiers: vec![Modifier::Private],
-                    name: field_name.to_owned(),
-                    member_type: MemberType::Variable,
-                });
-            }
-        }
+        return Err(AddDeclErr::DeclNotFound);
     }
 }

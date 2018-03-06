@@ -21,7 +21,10 @@ pub fn create_class(state: Arc<state::State>) {
         ],
         Box::new(move |data| {
             let class = Class::new_with_name(&data[1].val.clone());
-            state_clone.project.add_decl(&data[0].val, Declaration::Class(class));
+            state_clone.project.add_decl(
+                &data[0].val,
+                Declaration::Class(class),
+            );
             state_clone.project.regen_decl_completion_list();
         }),
     );
@@ -59,11 +62,16 @@ pub fn create_field(state: Arc<state::State>) {
             PT::String(P::new("Name")),
         ],
         Box::new(move |data| {
-            state_clone.project.add_decl_member(
+            if state_clone.project.add_decl_field(
                 &data[0].val,
-                &data[2].val,
-            );
-            println!("{:?}", data);
+                Field {
+                    modifiers: Vec::new(),
+                    field_type: data[1].val.clone(),
+                    name: data[2].val.clone(),
+                },
+            ).is_err() {
+                println!("Decl not found: {}", data[0].val);
+            }
         }),
     );
 }

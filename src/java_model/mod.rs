@@ -3,10 +3,12 @@
 mod class;
 mod modifier;
 mod package;
+mod field;
 
 pub use self::class::{MemberType, ClassMember, Class};
 pub use self::modifier::Modifier;
 pub use self::package::Package;
+pub use self::field::Field;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum Declaration {
