@@ -77,7 +77,7 @@ impl Package {
     /// # Return
     /// True if decl was added, false if this package did not match
     pub fn add_decl(&mut self, pkg: &str, decl: Declaration) -> bool {
-        let pkg = match self.add_subpackage(pkg.trim_right_matches(|c| c != '.')) {
+        let pkg = match self.add_subpackage(pkg) {
             None => return false,
             Some(p) => p,
         };
@@ -256,7 +256,7 @@ mod tests {
     use java_model::*;
 
     #[test]
-    pub fn new_pkg() {
+    fn new_pkg() {
         let (p, deepest) = Package::new("com.tom.example");
         unsafe {
             assert!(deepest.is_some());
@@ -270,7 +270,7 @@ mod tests {
     }
 
     #[test]
-    pub fn find_pkg_and_find_package_mut() {
+    fn find_pkg_and_find_package_mut() {
         let mut p = Package::new("com.tom").0;
         {
             let (deepest, remaining) = p.find_pkg("com.tom.example");
@@ -316,7 +316,7 @@ mod tests {
     }
 
     #[test]
-    pub fn add_subpackage() {
+    fn add_subpackage() {
         let mut p = Package::new("com.tom").0;
         p.add_subpackage("com.tom.example");
         assert_eq!(p.package_list[0].package_list.len(), 1);
@@ -332,14 +332,14 @@ mod tests {
     }
 
     #[test]
-    pub fn gen_package_completion_list() {
+    fn gen_package_completion_list() {
         let p = Package::new("com.tom.example").0;
         let completion_list = p.gen_package_completion_list();
         assert_eq!(completion_list, vec!["com", "com.tom", "com.tom.example"]);
     }
 
     #[test]
-    pub fn gen_decl_completion_list() {
+    fn gen_decl_completion_list() {
         let (p, deepest) = Package::new("com.tom.example");
         let deepest = deepest.unwrap();
         unsafe {
@@ -347,5 +347,13 @@ mod tests {
         }
         let completion_list = p.gen_decl_completion_list();
         assert_eq!(completion_list, vec!["com.tom.example.MyClass"]);
+    }
+
+    #[test]
+    fn add_decl() {
+        let mut p = Package::new("com.tom.example").0;
+        p.add_decl("com.joe.test", Declaration::Class(Class::new_with_name("test")));
+        assert_eq!(p.package_list.len(), 2);
+        assert_eq!(p.package_list[1].package_list[0].name, "test");
     }
 }
