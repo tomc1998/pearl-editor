@@ -72,6 +72,7 @@ fn main() {
         }
     }
     state.project.regen_decl_completion_list();
+    state.project.regen_pkg_completion_list();
 
     // Create views
     let package_view = view::PackageListView::new(state.clone(), fh);
