@@ -32,7 +32,7 @@ impl Package {
             decl_list: Vec::new(),
             package_list: Vec::new(),
         };
-        let pkg : *mut Package = root.add_subpackage(name).unwrap();
+        let pkg: *mut Package = root.add_subpackage(name).unwrap();
         // Only return pkg if it's not a pointer to the root (package is returned on the stack, so
         // returning a pointer to pkg in that case would be a segfault)
         if pkg as *mut Package == &mut root as *mut Package {
@@ -58,7 +58,7 @@ impl Package {
         match remaining {
             None => return Some(deepest),
             Some(remaining) => {
-                // add packages.                 
+                // add packages.
                 let mut curr_pkg: *mut Package = deepest;
                 for n in remaining.split(".") {
                     unsafe {
@@ -148,7 +148,7 @@ impl Package {
     ///
     /// The string returned will not include the last package, for example, if we try and find the
     /// package com.tom.example, but only com.tom exists, this will return Some(example).
-    /// 
+    ///
     /// Will return None for the first part of the tuple if the first part of the package doesn't
     /// match this package's name.
     pub fn find_pkg<'a>(&self, name: &'a str) -> (Option<&Package>, Option<&'a str>) {
@@ -248,6 +248,40 @@ impl Package {
             return (Some(&mut *pkg), found); // Cast back to mut ref (rather than raw pointer)
         }
     }
+
+    /// Find a declaration given a fully qualified name. Returns None if not found.
+    pub fn find_decl(&self, name: &str) -> Option<&Declaration> {
+        let mut splits = name.rsplitn(2, '.');
+        let decl_name = splits.next().unwrap();
+        let pkg_name = match splits.next() {
+            Some(p) => p,
+            None => unimplemented!("Trying to find decl in default package, unsupported: {}", name),
+        };
+        let pkg = match self.find_pkg(pkg_name).0 {
+            Some(p) => p,
+                None => {
+                    return None;
+                }
+        };
+        pkg.decl_list.iter().find(|d| d.name() == decl_name)
+    }
+
+    /// Find a declaration given a fully qualified name. Returns None if not found.
+    pub fn find_decl_mut(&mut self, name: &str) -> Option<&mut Declaration> {
+        let mut splits = name.rsplitn(2, '.');
+        let decl_name = splits.next().unwrap();
+        let pkg_name = match splits.next() {
+            Some(p) => p,
+            None => unimplemented!("Trying to find decl in default package, unsupported: {}", name),
+        };
+        let pkg = match self.find_pkg_mut(pkg_name).0 {
+            Some(p) => p,
+                None => {
+                    return None;
+                }
+        };
+        pkg.decl_list.iter_mut().find(|d| d.name() == decl_name)
+    }
 }
 
 #[cfg(test)]
@@ -343,7 +377,9 @@ mod tests {
         let (p, deepest) = Package::new("com.tom.example");
         let deepest = deepest.unwrap();
         unsafe {
-            (*deepest).decl_list.push(Declaration::Class(Class::new_with_name("MyClass")));
+            (*deepest).decl_list.push(Declaration::Class(
+                Class::new_with_name("MyClass"),
+            ));
         }
         let completion_list = p.gen_decl_completion_list();
         assert_eq!(completion_list, vec!["com.tom.example.MyClass"]);
@@ -352,8 +388,47 @@ mod tests {
     #[test]
     fn add_decl() {
         let mut p = Package::new("com.tom.example").0;
-        p.add_decl("com.joe.test", Declaration::Class(Class::new_with_name("test")));
+        p.add_decl(
+            "com.joe.test",
+            Declaration::Class(Class::new_with_name("test")),
+        );
         assert_eq!(p.package_list.len(), 2);
         assert_eq!(p.package_list[1].package_list[0].name, "test");
+    }
+
+    #[test]
+    fn find_decl_and_find_decl_mut() {
+        let mut p = Package::new("com.tom.example").0;
+        p.add_decl(
+            "com.tom.example",
+            Declaration::Class(Class::new_with_name("MyClass")),
+        );
+        {
+            let decl = p.find_decl("com.tom.example.MyClass");
+            assert!(decl.is_some());
+            assert_eq!(decl.unwrap().name(), "MyClass");
+        }
+        {
+            let decl = p.find_decl("com.tom.asd.MyClass");
+            assert!(decl.is_none());
+        }
+        {
+            let decl = p.find_decl("com.tom.example.asd");
+            assert!(decl.is_none());
+        }
+
+        {
+            let decl = p.find_decl_mut("com.tom.example.MyClass");
+            assert!(decl.is_some());
+            assert_eq!(decl.unwrap().name(), "MyClass");
+        }
+        {
+            let decl = p.find_decl_mut("com.tom.asd.MyClass");
+            assert!(decl.is_none());
+        }
+        {
+            let decl = p.find_decl_mut("com.tom.example.asd");
+            assert!(decl.is_none());
+        }
     }
 }
