@@ -38,4 +38,11 @@ impl Class {
             modifiers: Vec::new(),
         }
     }
+
+    pub fn new_with_name(name: &str) -> Class {
+        Class {
+            name: name.to_owned(),
+            ..Class::new_empty()
+        }
+    }
 }

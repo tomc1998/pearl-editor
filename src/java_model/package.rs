@@ -241,6 +241,7 @@ impl Package {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use java_model::*;
 
     #[test]
     pub fn new_pkg() {
@@ -322,5 +323,16 @@ mod tests {
         let p = Package::new("com.tom.example").0;
         let completion_list = p.gen_package_completion_list();
         assert_eq!(completion_list, vec!["com", "com.tom", "com.tom.example"]);
+    }
+
+    #[test]
+    pub fn gen_decl_completion_list() {
+        let (p, deepest) = Package::new("com.tom.example");
+        let deepest = deepest.unwrap();
+        unsafe {
+            (*deepest).decl_list.push(Declaration::Class(Class::new_with_name("MyClass")));
+        }
+        let completion_list = p.gen_decl_completion_list();
+        assert_eq!(completion_list, vec!["com.tom.example.MyClass"]);
     }
 }
