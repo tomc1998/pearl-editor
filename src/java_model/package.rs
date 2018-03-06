@@ -62,11 +62,7 @@ impl Package {
                 let mut curr_pkg: *mut Package = deepest;
                 for n in remaining.split(".") {
                     unsafe {
-                        (*curr_pkg).package_list.push(Package {
-                            name: n.to_owned(),
-                            decl_list: Vec::new(),
-                            package_list: Vec::new(),
-                        });
+                        (*curr_pkg).package_list.push(Package::new(n).0);
                         curr_pkg = (*curr_pkg).package_list.last_mut().unwrap();
                     }
                 }
@@ -262,17 +258,7 @@ mod tests {
 
     #[test]
     pub fn find_pkg_and_find_package_mut() {
-        let mut p = Package {
-            name: "com".to_owned(),
-            decl_list: Vec::new(),
-            package_list: vec![
-                Package {
-                    name: "tom".to_owned(),
-                    decl_list: Vec::new(),
-                    package_list: Vec::new(),
-                },
-            ],
-        };
+        let mut p = Package::new("com.tom").0;
         {
             let (deepest, remaining) = p.find_pkg("com.tom.example");
             assert_eq!(deepest, Some(&p.package_list[0]));
