@@ -304,17 +304,7 @@ mod tests {
 
     #[test]
     pub fn add_subpackage() {
-        let mut p = Package {
-            name: "com".to_owned(),
-            decl_list: Vec::new(),
-            package_list: vec![
-                Package {
-                    name: "tom".to_owned(),
-                    decl_list: Vec::new(),
-                    package_list: Vec::new(),
-                },
-            ],
-        };
+        let mut p = Package::new("com.tom").0;
         p.add_subpackage("com.tom.example");
         assert_eq!(p.package_list[0].package_list.len(), 1);
         assert_eq!(p.package_list[0].package_list[0].name, "example");
@@ -325,5 +315,12 @@ mod tests {
         assert_eq!(p.package_list.len(), 2);
         assert_eq!(p.package_list[1].package_list.len(), 1);
         assert_eq!(p.package_list[1].package_list[0].name, "foo");
+    }
+
+    #[test]
+    pub fn gen_package_completion_list() {
+        let p = Package::new("com.tom.example").0;
+        let completion_list = p.gen_package_completion_list();
+        assert_eq!(completion_list, vec!["com", "com.tom", "com.tom.example"]);
     }
 }
