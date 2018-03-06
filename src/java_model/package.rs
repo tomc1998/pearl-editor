@@ -1,4 +1,5 @@
 use super::Declaration;
+use std;
 
 pub struct Package {
     /// Name is the name of JUST this package.
@@ -146,65 +147,83 @@ impl Package {
 
     /// Find a package given a fully qualified name.
     /// If the package could not be found, return the package we 'made it to' whilst searching.
-    /// This might be self. If the package could not be found, false is returned as the second item
-    /// in the tuple - if the package was found, true is returned.
-    pub fn find_pkg(&self, name: &str) -> (&Package, bool) {
+    /// This might be self. If the package could not be found, None is returned as the second item
+    /// in the tuple, containing the remaining name - if the package was found, None is returned.
+    pub fn find_pkg<'a>(&self, name: &'a str) -> (&Package, Option<&'a str>) {
         use std::iter::Peekable;
         if name.len() == 0 {
-            return (self, false);
+            return (self, Some(name));
         }
 
         // Inner function to allow recursion.
-        fn _find_pkg<'a, 'b, I: Iterator<Item = &'b str>>(
+        fn _find_pkg<'a, I: Iterator<Item = &'a str>>(
             mut splits: Peekable<I>,
-            curr_pkg: &'a Package,
-        ) -> (&'a Package, bool) {
-            let name = splits.next().unwrap();
-            for p in &curr_pkg.package_list {
-                if p.name == name {
-                    if splits.peek().is_some() {
-                        return (p, true);
-                    } else {
-                        return _find_pkg(splits, p);
+            curr_pkg: *const Package,
+        ) -> (*const Package, Option<&'a str>) {
+            unsafe {
+                let name = splits.next().unwrap();
+                for p in &(*curr_pkg).package_list {
+                    if p.name == name {
+                        if splits.peek().is_some() {
+                            return (p, None);
+                        } else {
+                            return _find_pkg(splits, p);
+                        }
                     }
                 }
+
+                // Combine all remaining slices into one slice spanning them all
+                let len = splits.fold(name.len(), |l, _s| l + _s.len() + 1);
+                let ret = std::str::from_utf8_unchecked(std::slice::from_raw_parts(name.as_ptr(), len));
+                return (curr_pkg, Some(ret));
             }
-            return (curr_pkg, false);
         }
 
         let splits = name.split(".").peekable();
-        return _find_pkg(splits, self);
+        let (pkg, found) = _find_pkg(splits, self);
+        unsafe {
+            return (&*pkg, found); // Cast back to ref (rather than raw pointer)
+        }
     }
 
-    ///// Find a package given a fully qualified name.
-    ///// If the package could not be found, return the package we 'made it to' whilst searching.
-    ///// This might be self. If the package could not be found, false is returned as the second item
-    ///// in the tuple - if the package was found, true is returned.
-    //pub fn find_pkg_mut(&mut self, name: &str) -> (&mut Package, bool) {
-    //    use std::iter::Peekable;
-    //    if name.len() == 0 {
-    //        return (self, false);
-    //    }
+    /// Find a package given a fully qualified name.
+    /// If the package could not be found, return the package we 'made it to' whilst searching.
+    /// This might be self. If the package could not be found, None is returned as the second item
+    /// in the tuple, containing the remaining name - if the package was found, None is returned.
+    pub fn find_pkg_mut<'a>(&mut self, name: &'a str) -> (&mut Package, Option<&'a str>) {
+        use std::iter::Peekable;
+        if name.len() == 0 {
+            return (self, Some(name));
+        }
 
-    //    // Inner function to allow recursion.
-    //    fn _find_pkg<'a, 'b, I: Iterator<Item = &'b str>>(
-    //        mut splits: Peekable<I>,
-    //        curr_pkg: &'a mut Package,
-    //    ) -> (&'a mut Package, bool) {
-    //        let name = splits.next().unwrap();
-    //        for p in &mut curr_pkg.package_list {
-    //            if p.name == name {
-    //                if splits.peek().is_some() {
-    //                    return (p, true);
-    //                } else {
-    //                    return _find_pkg(splits, p);
-    //                }
-    //            }
-    //        }
-    //        return (curr_pkg, false);
-    //    }
+        // Inner function to allow recursion.
+        fn _find_pkg<'a, I: Iterator<Item = &'a str>>(
+            mut splits: Peekable<I>,
+            curr_pkg: *mut Package,
+        ) -> (*mut Package, Option<&'a str>) {
+            unsafe {
+                let name = splits.next().unwrap();
+                for p in &mut (*curr_pkg).package_list {
+                    if p.name == name {
+                        if splits.peek().is_some() {
+                            return (p, None);
+                        } else {
+                            return _find_pkg(splits, p);
+                        }
+                    }
+                }
 
-    //    let splits = name.split(".").peekable();
-    //    return _find_pkg(splits, self);
-    //}
+                // Combine all remaining slices into one slice spanning them all
+                let len = splits.fold(name.len(), |l, _s| l + _s.len() + 1);
+                let ret = std::str::from_utf8_unchecked(std::slice::from_raw_parts(name.as_ptr(), len));
+                return (curr_pkg, Some(ret));
+            }
+        }
+
+        let splits = name.split(".").peekable();
+        let (pkg, found) = _find_pkg(splits, self);
+        unsafe {
+            return (&mut *pkg, found); // Cast back to mut ref (rather than raw pointer)
+        }
+    }
 }

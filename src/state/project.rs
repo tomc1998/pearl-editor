@@ -84,8 +84,8 @@ impl Project {
     pub fn package_exists(&self, name: &str) -> bool {
         let mut exists = false;
         for p in self.package_list.lock().unwrap().iter() {
-            let (_, _exists) = p.find_pkg(name);
-            if _exists {
+            let (_, remaining) = p.find_pkg(name);
+            if remaining.is_none() {
                 exists = true;
                 break;
             }
