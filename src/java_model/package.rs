@@ -1,6 +1,7 @@
 use super::Declaration;
 use std;
 
+#[derive(PartialEq, Debug, Clone)]
 pub struct Package {
     /// Name is the name of JUST this package.
     pub name: String,
@@ -59,33 +60,30 @@ impl Package {
     /// 'asd' would panic, as 'com' does not match 'asd'. Returns a mutable reference to the
     /// package that was added.
     pub fn add_subpackage(&mut self, name: &str) -> &mut Package {
-        let mut splits = name.split(".");
-        assert_eq!(
-            &self.name,
-            splits.next().unwrap(),
-            "Package name must match the package when calling add_subpackage."
-        );
-
-        let mut curr_pkg: *mut Package = self;
-        'outer: for s in splits {
-            unsafe {
-                for p in &mut (*curr_pkg).package_list {
-                    if p.name == s {
-                        curr_pkg = p;
-                        continue 'outer;
+        let (deepest, remaining) = self.find_pkg_mut(name);
+        if deepest.is_none() {
+            panic!("Tried adding a subpackage to a package with a name that doesn't match")
+        };
+        let deepest = deepest.unwrap();
+        match remaining {
+            None => return deepest,
+            Some(remaining) => {
+                // add packages.                 
+                let mut curr_pkg: *mut Package = deepest;
+                for n in remaining.split(".") {
+                    unsafe {
+                        (*curr_pkg).package_list.push(Package {
+                            name: n.to_owned(),
+                            decl_list: Vec::new(),
+                            package_list: Vec::new(),
+                        });
+                        curr_pkg = (*curr_pkg).package_list.last_mut().unwrap();
                     }
                 }
-                // If we're here, a package wasn't found and we need to add subpackages
-                (*curr_pkg).package_list.push(Package {
-                    name: s.to_owned(),
-                    decl_list: Vec::new(),
-                    package_list: Vec::new(),
-                });
-                curr_pkg = (*curr_pkg).package_list.last_mut().unwrap();
+                unsafe {
+                    return &mut *curr_pkg;
+                }
             }
-        }
-        unsafe {
-            return &mut *curr_pkg;
         }
     }
 
@@ -149,10 +147,16 @@ impl Package {
     /// If the package could not be found, return the package we 'made it to' whilst searching.
     /// This might be self. If the package could not be found, None is returned as the second item
     /// in the tuple, containing the remaining name - if the package was found, None is returned.
-    pub fn find_pkg<'a>(&self, name: &'a str) -> (&Package, Option<&'a str>) {
+    ///
+    /// The string returned will not include the last package, for example, if we try and find the
+    /// package com.tom.example, but only com.tom exists, this will return Some(example).
+    /// 
+    /// Will return None for the first part of the tuple if the first part of the package doesn't
+    /// match this package's name.
+    pub fn find_pkg<'a>(&self, name: &'a str) -> (Option<&Package>, Option<&'a str>) {
         use std::iter::Peekable;
         if name.len() == 0 {
-            return (self, Some(name));
+            return (None, Some(name));
         }
 
         // Inner function to allow recursion.
@@ -165,24 +169,31 @@ impl Package {
                 for p in &(*curr_pkg).package_list {
                     if p.name == name {
                         if splits.peek().is_some() {
-                            return (p, None);
-                        } else {
                             return _find_pkg(splits, p);
+                        } else {
+                            return (p, None);
                         }
                     }
                 }
 
                 // Combine all remaining slices into one slice spanning them all
                 let len = splits.fold(name.len(), |l, _s| l + _s.len() + 1);
-                let ret = std::str::from_utf8_unchecked(std::slice::from_raw_parts(name.as_ptr(), len));
+                let ret =
+                    std::str::from_utf8_unchecked(std::slice::from_raw_parts(name.as_ptr(), len));
                 return (curr_pkg, Some(ret));
             }
         }
 
-        let splits = name.split(".").peekable();
+        let mut splits = name.split(".").peekable();
+        if splits.next().unwrap() != self.name {
+            return (None, Some(name));
+        }
+        if splits.peek().is_none() {
+            return (Some(self), None);
+        }
         let (pkg, found) = _find_pkg(splits, self);
         unsafe {
-            return (&*pkg, found); // Cast back to ref (rather than raw pointer)
+            return (Some(&*pkg), found); // Cast back to ref (rather than raw pointer)
         }
     }
 
@@ -190,10 +201,16 @@ impl Package {
     /// If the package could not be found, return the package we 'made it to' whilst searching.
     /// This might be self. If the package could not be found, None is returned as the second item
     /// in the tuple, containing the remaining name - if the package was found, None is returned.
-    pub fn find_pkg_mut<'a>(&mut self, name: &'a str) -> (&mut Package, Option<&'a str>) {
+    ///
+    /// The string returned will not include the last package, for example, if we try and find the
+    /// package com.tom.example, but only com.tom exists, this will return Some(example).
+    ///
+    /// Will return None for the first part of the tuple if the first part of the package doesn't
+    /// match this package's name.
+    pub fn find_pkg_mut<'a>(&mut self, name: &'a str) -> (Option<&mut Package>, Option<&'a str>) {
         use std::iter::Peekable;
         if name.len() == 0 {
-            return (self, Some(name));
+            return (None, Some(name));
         }
 
         // Inner function to allow recursion.
@@ -206,24 +223,92 @@ impl Package {
                 for p in &mut (*curr_pkg).package_list {
                     if p.name == name {
                         if splits.peek().is_some() {
-                            return (p, None);
-                        } else {
                             return _find_pkg(splits, p);
+                        } else {
+                            return (p, None);
                         }
                     }
                 }
 
                 // Combine all remaining slices into one slice spanning them all
                 let len = splits.fold(name.len(), |l, _s| l + _s.len() + 1);
-                let ret = std::str::from_utf8_unchecked(std::slice::from_raw_parts(name.as_ptr(), len));
+                let ret =
+                    std::str::from_utf8_unchecked(std::slice::from_raw_parts(name.as_ptr(), len));
                 return (curr_pkg, Some(ret));
             }
         }
 
-        let splits = name.split(".").peekable();
+        let mut splits = name.split(".").peekable();
+        if splits.next().unwrap() != self.name {
+            return (None, Some(name));
+        }
+        if splits.peek().is_none() {
+            return (Some(self), None);
+        }
         let (pkg, found) = _find_pkg(splits, self);
         unsafe {
-            return (&mut *pkg, found); // Cast back to mut ref (rather than raw pointer)
+            return (Some(&mut *pkg), found); // Cast back to mut ref (rather than raw pointer)
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    pub fn find_pkg_and_find_package_mut() {
+        let mut p = Package {
+            name: "com".to_owned(),
+            decl_list: Vec::new(),
+            package_list: vec![
+                Package {
+                    name: "tom".to_owned(),
+                    decl_list: Vec::new(),
+                    package_list: Vec::new(),
+                },
+            ],
+        };
+        {
+            let (deepest, remaining) = p.find_pkg("com.tom.example");
+            assert_eq!(deepest, Some(&p.package_list[0]));
+            assert_eq!(remaining, Some("example"));
+        }
+        {
+            let (deepest, remaining) = p.find_pkg("com.tom");
+            assert_eq!(deepest, Some(&p.package_list[0]));
+            assert_eq!(remaining, None);
+        }
+        {
+            let (deepest, remaining) = p.find_pkg("com");
+            assert_eq!(deepest, Some(&p));
+            assert_eq!(remaining, None);
+        }
+        {
+            let (deepest, remaining) = p.find_pkg("asd");
+            assert_eq!(deepest, None);
+            assert_eq!(remaining, Some("asd"));
+        }
+
+        {
+            let (deepest, remaining) = p.find_pkg_mut("com.tom.example");
+            assert_eq!(deepest.unwrap().name, "tom");
+            assert_eq!(remaining, Some("example"));
+        }
+        {
+            let (deepest, remaining) = p.find_pkg_mut("com.tom");
+            assert_eq!(deepest.unwrap().name, "tom");
+            assert_eq!(remaining, None);
+        }
+        {
+            let (deepest, remaining) = p.find_pkg_mut("com");
+            assert_eq!(deepest.unwrap().name, "com");
+            assert_eq!(remaining, None);
+        }
+        {
+            let (deepest, remaining) = p.find_pkg_mut("asd");
+            assert_eq!(deepest, None);
+            assert_eq!(remaining, Some("asd"));
         }
     }
 }

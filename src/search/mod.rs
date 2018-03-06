@@ -106,12 +106,12 @@ impl SearchBuffer {
     }
 }
 
-#[cfg(test)]
-mod tests {
+#[cfg(all(test, feature = "bench"))]
+mod benches {
     use super::*;
     use test;
 
-    #[doc = /** Test searching through a given amount of 30 char items */]
+    /// Test searching through a given amount of 30 char items
     fn bench_search(b: &mut test::Bencher, num_classes: usize) {
         const SEARCH_TERM: &'static str = "Al£adfAff";
         let mut search_buffer = SearchBuffer::new();
@@ -120,45 +120,45 @@ mod tests {
     }
 
     #[bench]
-    #[doc = /** Test searching through enough data to overflow cache exactly (3mb) */]
+    /// Test searching through enough data to overflow cache exactly (3mb)
     fn bench_search_0_125x_cache(b: &mut test::Bencher) {
         bench_search(b, 12500);
     }
 
     #[bench]
-    #[doc = /** Test searching through enough data to overflow cache exactly (3mb) */]
+    /// Test searching through enough data to overflow cache exactly (3mb)
     fn bench_search_0_25x_cache(b: &mut test::Bencher) {
         bench_search(b, 25000);
     }
 
     #[bench]
-    #[doc = /** Test searching through enough data to overflow cache exactly (3mb) */]
+    /// Test searching through enough data to overflow cache exactly (3mb)
     fn bench_search_0_5x_cache(b: &mut test::Bencher) {
         bench_search(b, 50000);
     }
 
 
     #[bench]
-    #[doc = /** Test searching through enough data to overflow cache exactly (3mb) */]
+    /// Test searching through enough data to overflow cache exactly (3mb)
     fn bench_search_1x_cache(b: &mut test::Bencher) {
         bench_search(b, 100000);
     }
 
     #[bench]
-    #[doc = /** Test searching through enough data to overflow cache by 2x (6mb) */]
+    /// Test searching through enough data to overflow cache by 2x (6mb)
     fn bench_search_2x_cache(b: &mut test::Bencher) {
         bench_search(b, 200000);
     }
 
     #[bench]
-    #[doc = /** Test searching through enough data to overflow cache by 3x (9mb) */]
+    /// Test searching through enough data to overflow cache by 3x (9mb)
     fn bench_search_3x_cache(b: &mut test::Bencher) {
         bench_search(b, 300000);
     }
 
     #[bench]
-    #[doc = /** Test searching for a char through loads of 18 char items, then placing the results in a search
-     * buffer */]
+    /// Test searching for a char through loads of 18 char items, then placing the results in a
+    /// search buffer
     fn bench_char_search_1000_and_alloc(b: &mut test::Bencher) {
         let mut search_buffer = SearchBuffer::new();
         search_buffer.add_strings(&vec!["ABCDEFJALSKQOEMWND"; 50000][..]);
